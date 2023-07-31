@@ -34,7 +34,7 @@ int pfs_error (int ierr)
 
 int pfs_init (void)
     {
-    if ( num_handle != 0 ) return -1;
+    if ( num_handle != 0 ) return 0;
     num_handle = 3;
     files = (struct pfs_file **) malloc (num_handle * sizeof (struct pfs_file *));
     if ( files == NULL ) return -2;
@@ -49,6 +49,8 @@ int pfs_init (void)
 
 int pfs_mount (struct pfs_pfs *pfs, const char *psMount)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     if ( pfs == NULL ) return -6;
     int nlen = strlen (psMount);
     struct pfs_mount *m = (struct pfs_mount *) malloc (sizeof (struct pfs_mount) + nlen + 2);
@@ -100,23 +102,13 @@ int pfs_mount (struct pfs_pfs *pfs, const char *psMount)
     m->pfs = pfs;
     m->next = mounts;
     mounts = m;
-    if ( num_handle == 0 )
-        {
-        int ierr = pfs_init ();
-        if ( ierr != 0 ) return ierr;
-        }
-    if ( cwd == NULL )
-        {
-        ps2 = (char *) malloc (m->nlen + 2);
-        ps2[0] = '/';
-        strcpy (&ps2[1], &m->name[1]);
-        cwd = ps2;
-        }
     return 0;
     }
 
 int _read (int handle, char *buffer, int length)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     if (( handle >= 0 ) && ( handle < num_handle ) && ( files[handle] != NULL ))
         {
         struct pfs_file *f = files[handle];
@@ -128,6 +120,8 @@ int _read (int handle, char *buffer, int length)
 
 int _write (int handle, char *buffer, int length)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     if (( handle >= 0 ) && ( handle < num_handle ) && ( files[handle] != NULL ))
         {
         struct pfs_file *f = files[handle];
@@ -173,6 +167,8 @@ static struct pfs_mount *reference (const char **pn, const char **pr)
 
 int _open (const char *fn, int oflag, ...)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     const char *rn;
     struct pfs_mount *m = reference (&fn, &rn);
     if ( m == NULL ) return -1;
@@ -214,6 +210,8 @@ int _open (const char *fn, int oflag, ...)
 
 int _close (int fd)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     if (( fd >= 0 ) && ( fd < num_handle ) && ( files[fd] != NULL ))
         {
         struct pfs_file *f = files[fd];
@@ -229,6 +227,8 @@ int _close (int fd)
 
 long _lseek (int fd, long pos, int whence)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     if (( fd >= 0 ) && ( fd < num_handle ) && ( files[fd] != NULL ))
         {
         struct pfs_file *f = files[fd];
@@ -240,6 +240,8 @@ long _lseek (int fd, long pos, int whence)
 
 int _fstat (int fd, struct stat *buf)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     if (( fd >= 0 ) && ( fd < num_handle ) && ( files[fd] != NULL ))
         {
         struct pfs_file *f = files[fd];
@@ -251,6 +253,8 @@ int _fstat (int fd, struct stat *buf)
 
 int _isatty (int fd)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     if (( fd >= 0 ) && ( fd < num_handle ) && ( files[fd] != NULL ))
         {
         struct pfs_file *f = files[fd];
@@ -262,7 +266,8 @@ int _isatty (int fd)
 
 int _stat (const char *name, struct stat *buf)
     {
-    int ierr = -1;
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     const char *rname;
     struct pfs_mount *m = reference (&name, &rname);
     if ( m == NULL ) return -1;
@@ -273,7 +278,8 @@ int _stat (const char *name, struct stat *buf)
 
 int _link (const char *old, const char *new)
     {
-    int ierr = -1;
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     const char *rold;
     struct pfs_mount *m1 = reference (&old, &rold);
     if ( m1 == NULL ) return -1;
@@ -287,6 +293,10 @@ int _link (const char *old, const char *new)
     if ( m2 == m1 )
         {
         ierr = m1->pfs->entry->rename (m1->pfs, rold, rnew);
+        }
+    else
+        {
+        ierr = -1;
         }
     if ( ierr == 0 )
         {
@@ -303,7 +313,8 @@ int _link (const char *old, const char *new)
 
 int _unlink (const char *name)
     {
-    int ierr = -1;
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     const char *rname;
     struct pfs_mount *m = reference (&name, &rname);
     if ( m == NULL ) return -1;
@@ -320,6 +331,8 @@ int _unlink (const char *name)
 
 int chdir (const char *path)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     const char *pn = pname_append (cwd, path);
     if ( pn == NULL ) return -1;
     free ((void *)cwd);
@@ -329,7 +342,8 @@ int chdir (const char *path)
 
 int mkdir (const char *name, mode_t mode)
     {
-    int ierr = -1;
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     const char *rname;
     struct pfs_mount *m = reference (&name, &rname);
     if ( m == NULL ) return -1;
@@ -340,7 +354,8 @@ int mkdir (const char *name, mode_t mode)
 
 int rmdir (const char *name)
     {
-    int ierr = -1;
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     const char *rname;
     struct pfs_mount *m = reference (&name, &rname);
     if ( m == NULL ) return -1;
@@ -351,6 +366,8 @@ int rmdir (const char *name)
 
 char *getcwd (char *buf, size_t size)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return NULL;
     if ( buf == NULL ) return strdup (cwd);
     if ( size < strlen (cwd) + 1 ) return NULL;
     strcpy (buf, cwd);
@@ -359,6 +376,8 @@ char *getcwd (char *buf, size_t size)
 
 void *opendir (const char *name)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return NULL;
     const char *rname;
     struct pfs_dir *d = NULL;
     struct pfs_mount *m = reference (&name, &rname);
@@ -409,6 +428,8 @@ static bool pfs_special (const char *name)
 
 struct dirent *readdir (void *dirp)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return NULL;
     struct pfs_dir *d = (struct pfs_dir *) dirp;
     memset (&d->de, 0, sizeof (struct dirent));
     if ( d->flags & PFS_DF_DOT )
@@ -451,7 +472,8 @@ struct dirent *readdir (void *dirp)
 
 int closedir (void *dirp)
     {
-    int ierr = 0;
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     struct pfs_dir *d = (struct pfs_dir *) dirp;
     if ( d->entry != NULL ) ierr = d->entry->closedir (d);
     free (d);
@@ -460,7 +482,8 @@ int closedir (void *dirp)
 
 int chmod (const char *name, mode_t mode)
     {
-    int ierr = -1;
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
     const char *rname;
     struct pfs_mount *m = reference (&name, &rname);
     if ( m == NULL ) return -1;
@@ -471,6 +494,8 @@ int chmod (const char *name, mode_t mode)
 
 char *realpath (const char *path, char *resolved_path)
     {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return NULL;
     char *ps = resolved_path;
     const char *pn = pname_append (cwd, path);
     if ( resolved_path == NULL )
