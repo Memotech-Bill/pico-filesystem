@@ -13,6 +13,7 @@ if (NOT TARGET flash_filesystem)
     ${CMAKE_CURRENT_LIST_DIR}/pfs_ffs.c
     ${CMAKE_CURRENT_LIST_DIR}/ffs_pico.c
     ${CMAKE_CURRENT_LIST_DIR}/../littlefs/lfs.c
+    ${CMAKE_CURRENT_LIST_DIR}/../littlefs/lfs_util.c
     )
 
   target_link_libraries(flash_filesystem INTERFACE pico_filesystem)
