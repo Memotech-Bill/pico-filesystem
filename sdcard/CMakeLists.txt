@@ -20,6 +20,10 @@ if (NOT TARGET sdcard_filesystem)
     ${CMAKE_CURRENT_LIST_DIR}/../fatfs/ffunicode.c
     )
 
-  target_link_libraries(sdcard_filesystem INTERFACE pico_filesystem)
+  target_link_libraries(sdcard_filesystem INTERFACE
+    pico_filesystem
+    hardware_gpio
+    hardware_pio
+    )
   
 endif()
