@@ -8,8 +8,9 @@
 
 #include <lfs.h>
 #include <hardware/flash.h>
+#include <hardware/sync.h>
 #ifdef PICO_MCLOCK
-#include "pico/multicore.h"
+#include <pico/multicore.h>
 #endif
 
 int ffs_pico_read (const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
