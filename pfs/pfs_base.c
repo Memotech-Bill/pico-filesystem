@@ -44,6 +44,7 @@ int pfs_init (void)
     if ( files[1] == NULL ) return -4;
     files[2] = pfs_stdio (2);
     if ( files[2] == NULL ) return -5;
+    cwd = strdup ("/");
     }
 
 int pfs_mount (struct pfs_pfs *pfs, const char *psMount)
@@ -166,7 +167,7 @@ static struct pfs_mount *reference (const char **pn, const char **pr)
                 }
             }
         }
-    errno = ENOENT;
+    *pr = *pn;
     return NULL;
     }
 
@@ -359,20 +360,36 @@ char *getcwd (char *buf, size_t size)
 void *opendir (const char *name)
     {
     const char *rname;
+    struct pfs_dir *d = NULL;
     struct pfs_mount *m = reference (&name, &rname);
-    if ( m == NULL ) return NULL;
-    struct pfs_dir *d = m->pfs->entry->opendir (m->pfs, rname);
-    if ( d != NULL )
+    if ( m == NULL )
         {
-        d->flags = PFS_DF_DOT;
         if ( strcmp (name, "/") == 0 )
             {
-            d->flags |= PFS_DF_DEV | PFS_DF_ROOT;
-            d->m = mounts;
+            d = (struct pfs_dir *) malloc (sizeof (struct pfs_dir));
+            if ( d != NULL )
+                {
+                d->entry = NULL;
+                d->flags = PFS_DF_DOT | PFS_DF_DEV | PFS_DF_ROOT;
+                d->m = mounts;
+                }
             }
-        else
+        }
+    else
+        {
+        d = m->pfs->entry->opendir (m->pfs, rname);
+        if ( d != NULL )
             {
-            d->flags |= PFS_DF_DDOT;
+            d->flags = PFS_DF_DOT | PFS_DF_FS;
+            if ( strcmp (name, "/") == 0 )
+                {
+                d->flags |= PFS_DF_DEV | PFS_DF_ROOT;
+                d->m = mounts;
+                }
+            else
+                {
+                d->flags |= PFS_DF_DDOT;
+                }
             }
         }
     free ((void *)name);
@@ -421,18 +438,22 @@ struct dirent *readdir (void *dirp)
             }
         return &d->de;
         }
-    while (true)
+    if ( d->flags & PFS_DF_FS )
         {
-        if ( d->entry->readdir (d) == NULL ) break;
-        if ( ! pfs_special (d->de.d_name) ) return &d->de;
+        while (true)
+            {
+            if ( d->entry->readdir (d) == NULL ) break;
+            if ( ! pfs_special (d->de.d_name) ) return &d->de;
+            }
         }
     return NULL;
     }
 
 int closedir (void *dirp)
     {
+    int ierr = 0;
     struct pfs_dir *d = (struct pfs_dir *) dirp;
-    int ierr = d->entry->closedir (d);
+    if ( d->entry != NULL ) ierr = d->entry->closedir (d);
     free (d);
     return ierr;
     }

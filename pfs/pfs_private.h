@@ -65,6 +65,7 @@ struct pfs_v_dir
 #define PFS_DF_DOT      0x01
 #define PFS_DF_DDOT     0x02
 #define PFS_DF_DEV      0x04
+#define PFS_DF_FS       0x08
 #define PFS_DF_ROOT     0x80
 
 struct pfs_dir
