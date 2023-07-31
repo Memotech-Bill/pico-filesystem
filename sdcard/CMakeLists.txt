@@ -24,6 +24,7 @@ if (NOT TARGET sdcard_filesystem)
     pico_filesystem
     hardware_gpio
     hardware_pio
+    hardware_dma
     )
   
 endif()

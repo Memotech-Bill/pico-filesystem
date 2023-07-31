@@ -11,7 +11,7 @@ if (NOT TARGET serial_filesystem)
     ${CMAKE_CURRENT_LIST_DIR}/picoser.c
     )
 
-  target_link_libraries(sdcard_filesystem INTERFACE
+  target_link_libraries(serial_filesystem INTERFACE
     pico_filesystem
     hardware_uart
     )
