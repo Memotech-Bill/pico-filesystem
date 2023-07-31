@@ -64,14 +64,13 @@ and then include the following code near the start of a program:
 ````
     #include <pfs.h>
     struct pfs_pfs *pfs;
-    struct lfs_config cfg;
     pfs = pfs_fat_create ();
     pfs_mount (pfs, "/");
 ````
 
 This has to be built with a board definition file which specifies
 which Pico GPIO pins the SD card is attached to. The code uses an
-SPI driver using PIO so any available GPIO pin numbers may be used.
+SPI driver using PIO so almost any available GPIO pin numbers may be used.
 
 ## Code Structure
 
@@ -134,14 +133,14 @@ specific)
 
 This converts operations on files and directories into operations
 on blocks of storage. It is this code that determines how directories
-and files are layed out on storage in the LFS format. This code is
+and files are laid out on storage in the LFS format. This code is
 device independent (not Pico specific) and is (c) copyright ARM.
 
 ### ffs_pico
 
 This provides the Pico specific routines needed to read, write and
-erase blocks of Flash memory to store the data. Note that while
-writing or erasing data on Flash memory, the other core, if running,
+erase blocks of flash memory to store the data. Note that while
+writing or erasing data on flash memory, the other core, if running,
 must not access flash. If the macro __PICO_MLOCK__ is defined then
 the flash write and erase code is enclosed within calls to
 __multicore_lockout_start_blocking()__ and
@@ -160,7 +159,7 @@ specific)
 
 This converts operations on files and directories into operations
 on blocks of storage. It is this code that determines how directories
-and files are layed out on storage in the FAT format. This code is
+and files are laid out on storage in the FAT format. This code is
 device independent (not Pico specific) and is (c) copyright ChaN.
 
 ### ff_disk
@@ -177,8 +176,8 @@ to CMake must specify:
 *   PICO_SD_DAT_PIN_INCREMENT - Increment in GPIO pin number for
     subsequent data pins.
 
-SD card pin "Data 3" must be connected (to GPIO pin
-PICO_SD_DAT0_PIN + 3 * PICO_SD_DAT_PIN_INCREMENT) to provide SPI
+SD card pin "Data 3" must be connected to GPIO pin
+(PICO_SD_DAT0_PIN + 3 * PICO_SD_DAT_PIN_INCREMENT) to provide SPI
 Chip Select. If SD card pins "Data 1" and "Data 2" are connected
 to the Pico, then specifying PICO_SD_DAT_PIN_COUNT will cause these
 pins to be pulled high. If these pins are not connected to the Pico
@@ -200,7 +199,7 @@ input / output and file and directory operations.
 
 ### int pfs_init (void)
 
-Initialises the pico filesystem. In particular configures __stdin__
+Initialises the pico filesystem. In particular configures __stdin__,
 __stdout__ and __stderr__.
 
 The routine returns zero on success, or a negative error
@@ -244,7 +243,7 @@ possible to have multiple FAT volumes.
 
 ### struct pfs_pfs *pfs_ser_create (void)
 
-Creates a __pfs_pfs__ structure which defines device node volume
+Creates a __pfs_pfs__ structure which defines a device node volume
 for the serial ports.
 
 ### int pfs_mount (struct pfs_pfs *pfs, const char *psMount)
