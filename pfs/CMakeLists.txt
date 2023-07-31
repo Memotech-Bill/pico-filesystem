@@ -9,5 +9,11 @@ if (NOT TARGET pico_filesystem)
     ${CMAKE_CURRENT_LIST_DIR}/pfs_stdio.c
     ${CMAKE_CURRENT_LIST_DIR}/pname.c
     )
+
+  target_link_libraries(pico_filesystem INTERFACE
+    pico_stdio
+    pico_malloc
+    pico_mem_ops
+    )
   
 endif()

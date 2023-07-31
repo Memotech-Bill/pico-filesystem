@@ -16,6 +16,10 @@ if (NOT TARGET flash_filesystem)
     ${CMAKE_CURRENT_LIST_DIR}/../littlefs/lfs_util.c
     )
 
-  target_link_libraries(flash_filesystem INTERFACE pico_filesystem)
+  target_link_libraries(flash_filesystem INTERFACE
+    pico_filesystem
+    hardware_flash
+    hardware_sync
+    )
 
 endif()
