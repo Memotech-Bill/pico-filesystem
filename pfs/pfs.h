@@ -10,6 +10,7 @@ struct lfs_config;
 
 int pfs_init (void);
 int pfs_mount (struct pfs_pfs *pfs, const char *psMount);
+int ffs_pico_createcfg (struct lfs_config *cfg, int offset, int size);
 struct pfs_pfs *pfs_ffs_create (const struct lfs_config *cfg);
 struct pfs_pfs *pfs_fat_create (void);
 struct pfs_pfs *pfs_ser_create (void);

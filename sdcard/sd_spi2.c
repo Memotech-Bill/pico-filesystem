@@ -20,7 +20,7 @@
 #error SD Card connections not defined. Specify a board including SD card.
 #else
 
-#define SD_CS_PIN       ( PICO_SD_DAT0_PIN + 3 )
+#define SD_CS_PIN       ( PICO_SD_DAT0_PIN + 3 * PICO_SD_DAT_PIN_INCREMENT )
 #define SD_CLK_PIN      PICO_SD_CLK_PIN
 #define SD_MOSI_PIN     PICO_SD_CMD_PIN
 // #define SD_MOSI_PIN     PICO_SD_DAT0_PIN
