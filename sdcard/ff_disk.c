@@ -2,10 +2,12 @@
 // Copyright (c) 2023, Memotech-Bill
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include "pico.h"
-#include "pico/stdlib.h"
-#include "../fatfs/ff.h"
-#include "../fatfs/diskio.h"
+#include <pico.h>
+#include <pico/stdlib.h>
+#include <pico/types.h>
+#include <hardware/rtc.h>
+#include <../fatfs/ff.h>
+#include <../fatfs/diskio.h>
 
 #define USE_SPI     // Never managed to make SD card mode from Pico SDK work
 static uint32_t lba_base = 0;
@@ -323,4 +325,31 @@ DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff)
     {
     if ( cmd == CTRL_SYNC ) return RES_OK;
     return RES_PARERR;
+    }
+
+DWORD get_fattime (void)
+    {
+    if ( rtc_running () )
+        {
+        datetime_t  dt;
+        rtc_get_datetime (&dt);
+        if (( dt.year >= 2000 ) && ( dt.year <= 2100 )
+            && ( dt.month >= 1 ) && ( dt.month <= 12 )
+            && ( dt.day >= 1 ) && ( dt.day <= 31 )
+            && ( dt.hour >= 0 ) && ( dt.hour <= 23 )
+            && ( dt.min >= 0 ) && ( dt.min <= 59 )
+            && ( dt.sec >= 0 ) && ( dt.sec <= 59 ))
+            {
+            // Done this way to avoid an obscure compiler error
+            DWORD   tim;
+            tim = ((DWORD) dt.year) << 25;
+            tim |= ((DWORD) dt.month) << 21;
+            tim |= ((DWORD) dt.day) << 16;
+            tim |= ((DWORD) dt.hour) << 11;
+            tim |= ((DWORD) dt.min) << 5;
+            tim |= ((DWORD) dt.sec) >> 1;
+            return tim;
+            }
+        }
+    return 0;
     }
