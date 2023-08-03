@@ -302,10 +302,147 @@ then mount these volumes at different mount points.
 
 ## Volume Drivers
 
-TODO: Write documentation on how to code new filesystem volumes.
+To implement a driver for a new filesystem, it is probably easiest
+to follow the example of the flash filesystem driver in
+"flash/pfs_ffs.c". For descriptive purposes assume that you are
+implementing "Your File System", and using the three letters "yfs"
+to identify the code. Then in the source code ("pfs_yfs.c") there
+should be:
+
+1. Forward declarations of the functions you need to implement:
+
+   ````
+   struct pfs_file *yfs_open (struct pfs_pfs *pfs, const char *fn, int oflag);
+   int yfs_close (struct pfs_file *pfs_fd);
+   int yfs_read (struct pfs_file *pfs_fd, char *buffer, int length);
+   int yfs_write (struct pfs_file *pfs_fd, char *buffer, int length);
+   long yfs_lseek (struct pfs_file *pfs_fd, long pos, int whence);
+   int yfs_fstat (struct pfs_file *pfs_fd, struct stat *buf);
+   int yfs_isatty (struct pfs_file *fd);
+   int yfs_stat (struct pfs_pfs *pfs, const char *name, struct stat *buf);
+   int yfs_rename (struct pfs_pfs *pfs, const char *old, const char *new);
+   int yfs_delete (struct pfs_pfs *pfs, const char *name);
+   int yfs_mkdir (struct pfs_pfs *pfs, const char *pathname, mode_t mode);
+   int yfs_rmdir (struct pfs_pfs *pfs, const char *pathname);
+   void *yfs_opendir (struct pfs_pfs *pfs, const char *name);
+   struct dirent *yfs_readdir (void *dirp);
+   int yfs_closedir (void *dirp);
+   int yfs_chmod (struct pfs_pfs *pfs, const char *pathname, mode_t mode);
+    
+   ````
+
+2. Static constant structures providing vectors into your routines
+
+   ````
+   static const struct pfs_v_pfs yfs_v_pfs =
+       {
+       yfs_open,
+       yfs_stat,
+       yfs_rename,
+       yfs_delete,
+       yfs_mkdir,
+       yfs_rmdir,
+       yfs_opendir,
+       yfs_chmod
+       };
+       
+   static const struct pfs_v_file yfs_v_file =
+       {
+       yfs_close,
+       yfs_read,
+       yfs_write,
+       yfs_lseek,
+       yfs_fstat,
+       };
+    
+   static const struct pfs_v_dir yfs_v_dir =
+       {
+       yfs_readdir,
+       yfs_closedir,
+       };
+   ````
+
+3. Definition of structures providing details of:
+
+   * The filesystem:
+
+     ````
+     struct yfs_pfs
+         {
+         const struct pfs_v_pfs *    entry;  // = &yfs_v_pfs
+         // Any data specific to your filesystem here
+         };
+     ````
+
+   * An open file:
+
+     ````
+     struct yfs_file
+         {
+         const struct pfs_v_file *   entry;  // = &yfs_v_file
+         struct yfs_pfs *            yfs;    // Pointer to the volume data
+         const char *                pn;     // Full pathname of the file
+         // Any data specific to an open file on your filesystem
+         };
+     ````
+
+   * An open directory:
+
+     ````
+     struct yfs_dir
+         {
+         const struct pfs_v_dir *    entry;  // = &yfs_v_dir
+         struct yfs_pfs *            yfs;    // Pointer to the volume data
+         int                         flags;  // Used internally by _readdir (do not use)
+         struct pfs_mount *          m;      // Used internally by _readdir (do not use)
+         struct dirent               de;     // Buffer for storing results of directory search
+         // Any data specific to an open directory on your filesystem
+         };
+     ````
+
+4. Your implementation of the functions listed in (1). Points to note:
+
+    * All input filenames are given as full paths (excluding the mount point name)
+    * In the event of an error `pfs_err()` should be called with the appropriate
+      error code from <sys/errno.h>, and return either NULL or -1 according to
+      the return type of the function.
+    * On success `yfs_open(...)` should allocate a `struct yfs_file` on the heap,
+      populate the structure as required and return a pointer to the allocated
+      structure. In the event of an error any allocated memory should be freed
+      and a NULL pointer returned.
+    * `yfs_opendir(...)` should be similar to `yfs_open(...)` with the structure
+      it returns.
+    * `yfs_close(...)` and `yfs_closedir(...)` should NOT free the memory associated
+      with the pointers they are given. That is done within the PFS `_close(...)`
+      and `_closedir(...)` routines.
+
+5. A routine to allocate and populate an instance of `struct yfs_pfs`.
+   This routine may take whatever parameters are necessary
+   to specify the volume.
+
+### LFS on other Media
+
+The __littlefs__ code uses a `struct lfs_config` to specify the
+routines that have to be called to read, write or erase the media
+it wants to access, together with values defining properties of
+the media. This structure is passed into the call to
+`pfs_ffs_create(...)`. Thus in order to implement LFS on media
+other than the Pico flash, it is only necessary to implement
+the necessary media access routines and complete an appropriate
+`struct lfs_config` to pass to `pfs_ffs_create(...)` to
+create a volume for mounting.
 
 Since LFS provides wear leveling, it might be useful to provide
 LFS on an SD card as an alternative to FAT.
+
+### FAT on other Media
+
+Unfortunately the __FATFS__ code uses fixed routine names for
+media access. So it is not so simple to be able to load volumes
+on other media.
+
+TODO: Look at makingg use of FATFS drive numbers, or at modifying
+the FATFS code to use dynamic pointers to the media access routines.
 
 ## Implementation Notes
 
