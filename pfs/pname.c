@@ -7,6 +7,10 @@
 #include <stdbool.h>
 #include <pname.h>
 
+#ifndef STATIC
+#define STATIC  static
+#endif
+
 typedef struct s_pname
     {
     struct s_pname *    prev;
@@ -15,9 +19,9 @@ typedef struct s_pname
     int                 len;
     } PNAME;
 
-static char rootdir = '/';
+STATIC char rootdir = '/';
 
-static void pname_clean (PNAME *pn)
+STATIC void pname_clean (PNAME *pn)
     {
     PNAME *pe1 = pn->next;
     PNAME *pe2;
@@ -31,13 +35,13 @@ static void pname_clean (PNAME *pn)
     pn->next = pn;
     }
 
-static void pname_delete (PNAME *pn)
+STATIC void pname_delete (PNAME *pn)
     {
     pname_clean (pn);
     free (pn);
     }
 
-static void pname_link (PNAME *pn, PNAME *pe)
+STATIC void pname_link (PNAME *pn, PNAME *pe)
     {
     pe->prev = pn->prev;
     pe->next = pn;
@@ -45,7 +49,7 @@ static void pname_link (PNAME *pn, PNAME *pe)
     pn->prev = pe;
     }
 
-static PNAME * pname_unlink (PNAME *pe)
+STATIC PNAME * pname_unlink (PNAME *pe)
     {
     PNAME *pep = pe->prev;
     PNAME *pen = pe->next;
@@ -56,7 +60,7 @@ static PNAME * pname_unlink (PNAME *pe)
     return pe;
     }
 
-static bool pname_scan (PNAME *pn)
+STATIC bool pname_scan (PNAME *pn)
     {
     const char * pend = pn->name + pn->len;
     const char * ps1 = pn->name;
@@ -88,7 +92,7 @@ static bool pname_scan (PNAME *pn)
     return true;
     }
 
-static PNAME * pname_create (const char *psPath)
+STATIC PNAME * pname_create (const char *psPath)
     {
     PNAME *pn = (PNAME *) malloc (sizeof (PNAME));
     if ( pn == NULL ) return NULL;
@@ -104,7 +108,7 @@ static PNAME * pname_create (const char *psPath)
     return pn;
     }
 
-static void pname_join (PNAME *pn1, PNAME *pn2)
+STATIC void pname_join (PNAME *pn1, PNAME *pn2)
     {
     while (( pn2->next != pn2 ) && ( pn2->next != NULL ))
         {

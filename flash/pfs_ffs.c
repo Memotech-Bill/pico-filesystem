@@ -12,24 +12,28 @@
 #include <pfs_private.h>
 #include <lfs.h>
 
-struct pfs_file *ffs_open (struct pfs_pfs *pfs, const char *fn, int oflag);
-int ffs_close (struct pfs_file *pfs_fd);
-int ffs_read (struct pfs_file *pfs_fd, char *buffer, int length);
-int ffs_write (struct pfs_file *pfs_fd, char *buffer, int length);
-long ffs_lseek (struct pfs_file *pfs_fd, long pos, int whence);
-int ffs_fstat (struct pfs_file *pfs_fd, struct stat *buf);
-int ffs_isatty (struct pfs_file *fd);
-int ffs_stat (struct pfs_pfs *pfs, const char *name, struct stat *buf);
-int ffs_rename (struct pfs_pfs *pfs, const char *old, const char *new);
-int ffs_delete (struct pfs_pfs *pfs, const char *name);
-int ffs_mkdir (struct pfs_pfs *pfs, const char *pathname, mode_t mode);
-int ffs_rmdir (struct pfs_pfs *pfs, const char *pathname);
-void *ffs_opendir (struct pfs_pfs *pfs, const char *name);
-struct dirent *ffs_readdir (void *dirp);
-int ffs_closedir (void *dirp);
-int ffs_chmod (struct pfs_pfs *pfs, const char *pathname, mode_t mode);
+#ifndef STATIC
+#define STATIC  static
+#endif
 
-static const struct pfs_v_pfs ffs_v_pfs =
+STATIC struct pfs_file *ffs_open (struct pfs_pfs *pfs, const char *fn, int oflag);
+STATIC int ffs_close (struct pfs_file *pfs_fd);
+STATIC int ffs_read (struct pfs_file *pfs_fd, char *buffer, int length);
+STATIC int ffs_write (struct pfs_file *pfs_fd, char *buffer, int length);
+STATIC long ffs_lseek (struct pfs_file *pfs_fd, long pos, int whence);
+STATIC int ffs_fstat (struct pfs_file *pfs_fd, struct stat *buf);
+STATIC int ffs_isatty (struct pfs_file *fd);
+STATIC int ffs_stat (struct pfs_pfs *pfs, const char *name, struct stat *buf);
+STATIC int ffs_rename (struct pfs_pfs *pfs, const char *old, const char *new);
+STATIC int ffs_delete (struct pfs_pfs *pfs, const char *name);
+STATIC int ffs_mkdir (struct pfs_pfs *pfs, const char *pathname, mode_t mode);
+STATIC int ffs_rmdir (struct pfs_pfs *pfs, const char *pathname);
+STATIC void *ffs_opendir (struct pfs_pfs *pfs, const char *name);
+STATIC struct dirent *ffs_readdir (void *dirp);
+STATIC int ffs_closedir (void *dirp);
+STATIC int ffs_chmod (struct pfs_pfs *pfs, const char *pathname, mode_t mode);
+
+STATIC const struct pfs_v_pfs ffs_v_pfs =
     {
     ffs_open,
     ffs_stat,
@@ -41,16 +45,18 @@ static const struct pfs_v_pfs ffs_v_pfs =
     ffs_chmod
     };
     
-static const struct pfs_v_file ffs_v_file =
+STATIC const struct pfs_v_file ffs_v_file =
     {
     ffs_close,
     ffs_read,
     ffs_write,
     ffs_lseek,
     ffs_fstat,
+    NULL,           // isatty
+    NULL            // ioctl
     };
 
-static const struct pfs_v_dir ffs_v_dir =
+STATIC const struct pfs_v_dir ffs_v_dir =
     {
     ffs_readdir,
     ffs_closedir,
@@ -81,7 +87,7 @@ struct ffs_dir
     lfs_dir_t                   dt;
     };
 
-struct pfs_file *ffs_open (struct pfs_pfs *pfs, const char *fn, int oflag)
+STATIC struct pfs_file *ffs_open (struct pfs_pfs *pfs, const char *fn, int oflag)
     {
     struct ffs_pfs *ffs = (struct ffs_pfs *) pfs;
     struct ffs_file *fd = (struct ffs_file *) malloc (sizeof (struct ffs_file));
@@ -109,14 +115,14 @@ struct pfs_file *ffs_open (struct pfs_pfs *pfs, const char *fn, int oflag)
     return NULL;
     }
 
-int ffs_close (struct pfs_file *pfs_fd)
+STATIC int ffs_close (struct pfs_file *pfs_fd)
     {
     struct ffs_file *fd = (struct ffs_file *) pfs_fd;
     struct ffs_pfs *ffs = fd->ffs;
     return pfs_error (lfs_file_close (&ffs->base, &fd->ft));
     }
 
-int ffs_read (struct pfs_file *pfs_fd, char *buffer, int length)
+STATIC int ffs_read (struct pfs_file *pfs_fd, char *buffer, int length)
     {
     struct ffs_file *fd = (struct ffs_file *) pfs_fd;
     struct ffs_pfs *ffs = fd->ffs;
@@ -124,7 +130,7 @@ int ffs_read (struct pfs_file *pfs_fd, char *buffer, int length)
     return ( r >= 0 ) ? r : pfs_error (r);
     }
 
-int ffs_write (struct pfs_file *pfs_fd, char *buffer, int length)
+STATIC int ffs_write (struct pfs_file *pfs_fd, char *buffer, int length)
     {
     struct ffs_file *fd = (struct ffs_file *) pfs_fd;
     struct ffs_pfs *ffs = fd->ffs;
@@ -132,7 +138,7 @@ int ffs_write (struct pfs_file *pfs_fd, char *buffer, int length)
     return ( r >= 0 ) ? r : pfs_error (r);
     }
 
-long ffs_lseek (struct pfs_file *pfs_fd, long pos, int whence)
+STATIC long ffs_lseek (struct pfs_file *pfs_fd, long pos, int whence)
     {
     struct ffs_file *fd = (struct ffs_file *) pfs_fd;
     struct ffs_pfs *ffs = fd->ffs;
@@ -146,17 +152,17 @@ long ffs_lseek (struct pfs_file *pfs_fd, long pos, int whence)
     return ( r >= 0 ) ? r : pfs_error (r);
     }
 
-int ffs_fstat (struct pfs_file *pfs_fd, struct stat *buf)
+STATIC int ffs_fstat (struct pfs_file *pfs_fd, struct stat *buf)
     {
     return ffs_stat (pfs_fd->pfs, pfs_fd->pn, buf);
     }
 
-int ffs_isatty (struct pfs_file *fd)
+STATIC int ffs_isatty (struct pfs_file *fd)
     {
     return 0;
     }
 
-int ffs_stat (struct pfs_pfs *pfs, const char *name, struct stat *buf)
+STATIC int ffs_stat (struct pfs_pfs *pfs, const char *name, struct stat *buf)
     {
     struct ffs_pfs *ffs = (struct ffs_pfs *) pfs;
     struct lfs_info info;
@@ -174,31 +180,31 @@ int ffs_stat (struct pfs_pfs *pfs, const char *name, struct stat *buf)
     }
     
 
-int ffs_rename (struct pfs_pfs *pfs, const char *old, const char *new)
+STATIC int ffs_rename (struct pfs_pfs *pfs, const char *old, const char *new)
     {
     struct ffs_pfs *ffs = (struct ffs_pfs *) pfs;
     return pfs_error (lfs_rename (&ffs->base, old, new));
     }
 
-int ffs_delete (struct pfs_pfs *pfs, const char *name)
+STATIC int ffs_delete (struct pfs_pfs *pfs, const char *name)
     {
     struct ffs_pfs *ffs = (struct ffs_pfs *) pfs;
     return pfs_error (lfs_remove (&ffs->base, name));
     }
 
-int ffs_mkdir (struct pfs_pfs *pfs, const char *pathname, mode_t mode)
+STATIC int ffs_mkdir (struct pfs_pfs *pfs, const char *pathname, mode_t mode)
     {
     struct ffs_pfs *ffs = (struct ffs_pfs *) pfs;
     return pfs_error (lfs_mkdir (&ffs->base, pathname));
     }
 
-int ffs_rmdir (struct pfs_pfs *pfs, const char *pathname)
+STATIC int ffs_rmdir (struct pfs_pfs *pfs, const char *pathname)
     {
     struct ffs_pfs *ffs = (struct ffs_pfs *) pfs;
     return pfs_error (lfs_remove (&ffs->base, pathname));
     }
 
-void *ffs_opendir (struct pfs_pfs *pfs, const char *name)
+STATIC void *ffs_opendir (struct pfs_pfs *pfs, const char *name)
     {
     struct ffs_pfs *ffs = (struct ffs_pfs *) pfs;
     struct ffs_dir *dd = (struct ffs_dir *) malloc (sizeof (struct ffs_dir));
@@ -214,7 +220,7 @@ void *ffs_opendir (struct pfs_pfs *pfs, const char *name)
     return NULL;
     }
 
-struct dirent *ffs_readdir (void *dirp)
+STATIC struct dirent *ffs_readdir (void *dirp)
     {
     struct ffs_dir *dd = (struct ffs_dir *) dirp;
     struct ffs_pfs *ffs = dd->ffs;
@@ -226,14 +232,14 @@ struct dirent *ffs_readdir (void *dirp)
     return &dd->de;
     }
 
-int ffs_closedir (void *dirp)
+STATIC int ffs_closedir (void *dirp)
     {
     struct ffs_dir *dd = (struct ffs_dir *) dirp;
     struct ffs_pfs *ffs = dd->ffs;
     return pfs_error (lfs_dir_close (&ffs->base, &dd->dt));
     }
 
-int ffs_chmod (struct pfs_pfs *pfs, const char *pathname, mode_t mode)
+STATIC int ffs_chmod (struct pfs_pfs *pfs, const char *pathname, mode_t mode)
     {
     return pfs_error (EINVAL);
     }

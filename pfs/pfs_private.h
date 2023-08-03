@@ -12,6 +12,7 @@
 struct pfs_pfs;
 struct pfs_file;
 struct pfs_dir;
+struct pfs_mount;
 
 struct pfs_v_pfs
     {
@@ -30,15 +31,6 @@ struct pfs_pfs
     const struct pfs_v_pfs *    entry;
     };
 
-struct pfs_mount
-    {
-    struct pfs_mount *          next;
-    struct pfs_pfs *            pfs;
-    const char *                moved;
-    int                         nlen;
-    char                        name[];
-    };
-
 struct pfs_v_file
     {
     int (*close)(struct pfs_file *fd);
@@ -46,7 +38,8 @@ struct pfs_v_file
     int (*write)(struct pfs_file *fd, char *buffer, int length);
     long (*lseek)(struct pfs_file *fd, long pos, int whence);
     int (*fstat)(struct pfs_file *fd, struct stat *buf);
-    int (*isatty) (struct pfs_file *fd);
+    int (*isatty)(struct pfs_file *fd);
+    int (*ioctl)(struct pfs_file *fd, unsigned long request, void *argp);
     };
 
 struct pfs_file
@@ -75,6 +68,11 @@ struct pfs_dir
     int                         flags;
     const struct pfs_mount *    m;
     struct dirent               de;
+    };
+
+struct pfs_device
+    {
+    struct pfs_file * (*open) (const struct pfs_device *dev, const char *name, int oflags);
     };
 
 int pfs_error (int ierr);

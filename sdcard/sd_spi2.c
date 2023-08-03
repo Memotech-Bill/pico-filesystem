@@ -20,10 +20,13 @@
 #error SD Card connections not defined. Specify a board including SD card.
 #else
 
+#ifdef PICO_SD_DAT3_PIN
+#define SD_CS_PIN       PICO_SD_DAT3_PIN
+#else
 #define SD_CS_PIN       ( PICO_SD_DAT0_PIN + 3 * PICO_SD_DAT_PIN_INCREMENT )
+#endif
 #define SD_CLK_PIN      PICO_SD_CLK_PIN
 #define SD_MOSI_PIN     PICO_SD_CMD_PIN
-// #define SD_MOSI_PIN     PICO_SD_DAT0_PIN
 #define SD_MISO_PIN     PICO_SD_DAT0_PIN
 
 bi_decl (bi_1pin_with_name (SD_CS_PIN, "SD card data 3 (chip select)"));

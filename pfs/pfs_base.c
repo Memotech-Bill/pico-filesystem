@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 #include <sys/syslimits.h>
 #include <pico/stdio.h>
 #include <pico/time.h>
@@ -12,6 +13,7 @@
 #include <pfs_private.h>
 #include <dirent.h>
 #include <pname.h>
+#include <pfs_dev_tty.h>
 
 #undef errno
 extern int errno;
@@ -19,6 +21,15 @@ extern int errno;
 #define STDIO_HANDLE_STDIN  0
 #define STDIO_HANDLE_STDOUT 1
 #define STDIO_HANDLE_STDERR 2
+
+struct pfs_mount
+    {
+    struct pfs_mount *          next;
+    struct pfs_pfs *            pfs;
+    const char *                moved;
+    int                         nlen;
+    char                        name[];
+    };
 
 static struct pfs_mount *mounts = NULL;
 static struct pfs_file ** files = NULL;
@@ -38,13 +49,15 @@ int pfs_init (void)
     num_handle = 3;
     files = (struct pfs_file **) malloc (num_handle * sizeof (struct pfs_file *));
     if ( files == NULL ) return -2;
-    files[0] = pfs_stdio (0);
+    const struct pfs_device *tty = pfs_dev_tty_fetch ();
+    files[0] = tty->open (tty, NULL, O_RDWR);
     if ( files[0] == NULL ) return -3;
-    files[1] = pfs_stdio (1);
+    files[1] = tty->open (tty, NULL, O_RDWR);
     if ( files[1] == NULL ) return -4;
-    files[2] = pfs_stdio (2);
+    files[2] = tty->open (tty, NULL, O_RDWR);
     if ( files[2] == NULL ) return -5;
     cwd = strdup ("/");
+    return 0;
     }
 
 int pfs_mount (struct pfs_pfs *pfs, const char *psMount)
@@ -112,6 +125,7 @@ int _read (int handle, char *buffer, int length)
     if (( handle >= 0 ) && ( handle < num_handle ) && ( files[handle] != NULL ))
         {
         struct pfs_file *f = files[handle];
+        if ( f->entry->read == NULL ) return pfs_error (EINVAL);
         return f->entry->read (f, buffer, length);
         }
     errno = EBADF;
@@ -125,6 +139,7 @@ int _write (int handle, char *buffer, int length)
     if (( handle >= 0 ) && ( handle < num_handle ) && ( files[handle] != NULL ))
         {
         struct pfs_file *f = files[handle];
+        if ( f->entry->write == NULL ) return pfs_error (EINVAL);
         return f->entry->write (f, buffer, length);
         }
     errno = EBADF;
@@ -191,7 +206,7 @@ int _open (const char *fn, int oflag, ...)
     struct pfs_file ** fi2 = (struct pfs_file **) realloc (files, nh);
     if ( fi2 == NULL )
         {
-        f->entry->close (f);
+        if ( f->entry->close != NULL ) f->entry->close (f);
         free ((void *) f->pn);
         free (f);
         errno = ENFILE;
@@ -215,7 +230,7 @@ int _close (int fd)
     if (( fd >= 0 ) && ( fd < num_handle ) && ( files[fd] != NULL ))
         {
         struct pfs_file *f = files[fd];
-        int ierr = f->entry->close (f);
+        int ierr = ( f->entry->close != NULL ) ? f->entry->close (f) : 0;
         free ((void *)files[fd]->pn);
         free (files[fd]);
         files[fd] = NULL;
@@ -232,6 +247,7 @@ long _lseek (int fd, long pos, int whence)
     if (( fd >= 0 ) && ( fd < num_handle ) && ( files[fd] != NULL ))
         {
         struct pfs_file *f = files[fd];
+        if ( f->entry->lseek == NULL ) return pfs_error (EINVAL);
         return f->entry->lseek (f, pos, whence);
         }
     errno = EBADF;
@@ -245,6 +261,7 @@ int _fstat (int fd, struct stat *buf)
     if (( fd >= 0 ) && ( fd < num_handle ) && ( files[fd] != NULL ))
         {
         struct pfs_file *f = files[fd];
+        if ( f->entry->fstat == NULL ) return pfs_error (EINVAL);
         return f->entry->fstat (f, buf);
         }
     errno = EBADF;
@@ -258,10 +275,30 @@ int _isatty (int fd)
     if (( fd >= 0 ) && ( fd < num_handle ) && ( files[fd] != NULL ))
         {
         struct pfs_file *f = files[fd];
+        if ( f->entry->isatty == NULL ) return 0;
         return f->entry->isatty (f);
         }
     errno = EBADF;
     return -1;
+    }
+
+int _ioctl (int fd, unsigned long request, void *argp)
+    {
+    int ierr = pfs_init ();
+    if ( ierr != 0 ) return ierr;
+    if (( fd >= 0 ) && ( fd < num_handle ) && ( files[fd] != NULL ))
+        {
+        struct pfs_file *f = files[fd];
+        if ( f->entry->ioctl == NULL ) return pfs_error (EINVAL);
+        return f->entry->ioctl (f, request, argp);
+        }
+    errno = EBADF;
+    return -1;
+    }
+
+int ioctl (int fd, unsigned long request, void *argp)
+    {
+    return _ioctl (fd, request, argp);
     }
 
 int _stat (const char *name, struct stat *buf)
@@ -270,8 +307,8 @@ int _stat (const char *name, struct stat *buf)
     if ( ierr != 0 ) return ierr;
     const char *rname;
     struct pfs_mount *m = reference (&name, &rname);
-    if ( m == NULL ) return -1;
-    ierr = m->pfs->entry->stat (m->pfs, rname, buf);
+    if ( m == NULL ) return pfs_error (EINVAL);
+    ierr = ( m->pfs->entry->stat != NULL ) ? m->pfs->entry->stat (m->pfs, rname, buf) : pfs_error (EINVAL);
     free ((void *)name);
     return ierr;
     }
@@ -292,7 +329,7 @@ int _link (const char *old, const char *new)
         }
     if ( m2 == m1 )
         {
-        ierr = m1->pfs->entry->rename (m1->pfs, rold, rnew);
+        ierr = ( m1->pfs->entry->rename != NULL ) ? m1->pfs->entry->rename (m1->pfs, rold, rnew) : pfs_error (EPERM);
         }
     else
         {
@@ -318,7 +355,7 @@ int _unlink (const char *name)
     const char *rname;
     struct pfs_mount *m = reference (&name, &rname);
     if ( m == NULL ) return -1;
-    ierr = m->pfs->entry->delete (m->pfs, rname);
+    ierr = ( m->pfs->entry->delete != NULL ) ? m->pfs->entry->delete (m->pfs, rname) : pfs_error (EPERM);
     if ( m->moved != NULL )
         {
         if (( ierr == -1 ) && ( strcmp (m->moved, name) == 0 )) ierr = 0;
@@ -347,7 +384,7 @@ int mkdir (const char *name, mode_t mode)
     const char *rname;
     struct pfs_mount *m = reference (&name, &rname);
     if ( m == NULL ) return -1;
-    ierr = m->pfs->entry->mkdir (m->pfs, rname, mode);
+    ierr = ( m->pfs->entry->mkdir != NULL ) ? m->pfs->entry->mkdir (m->pfs, rname, mode) : pfs_error (EPERM);
     free ((void *)name);
     return ierr;
     }
@@ -359,7 +396,7 @@ int rmdir (const char *name)
     const char *rname;
     struct pfs_mount *m = reference (&name, &rname);
     if ( m == NULL ) return -1;
-    ierr = m->pfs->entry->rmdir (m->pfs, rname);
+    ierr = ( m->pfs->entry->rmdir != NULL ) ? m->pfs->entry->rmdir (m->pfs, rname) : pfs_error (EPERM);
     free ((void *)name);
     return ierr;
     }
@@ -475,7 +512,7 @@ int closedir (void *dirp)
     int ierr = pfs_init ();
     if ( ierr != 0 ) return ierr;
     struct pfs_dir *d = (struct pfs_dir *) dirp;
-    if ( d->entry != NULL ) ierr = d->entry->closedir (d);
+    if ( d->entry != NULL ) ierr = ( d->entry->closedir != NULL ) ? d->entry->closedir (d) : 0;
     free (d);
     return ierr;
     }
@@ -487,7 +524,7 @@ int chmod (const char *name, mode_t mode)
     const char *rname;
     struct pfs_mount *m = reference (&name, &rname);
     if ( m == NULL ) return -1;
-    ierr = m->pfs->entry->chmod (m->pfs, rname, mode);
+    ierr = ( m->pfs->entry->chmod != NULL ) ? m->pfs->entry->chmod (m->pfs, rname, mode) : 0;
     free ((void *)name);
     return ierr;
     }

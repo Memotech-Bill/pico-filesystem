@@ -13,10 +13,14 @@
 #include <pico/multicore.h>
 #endif
 
-int ffs_pico_read (const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
-int ffs_pico_prog (const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size);
-int ffs_pico_erase (const struct lfs_config *cfg, lfs_block_t block);
-int ffs_pico_sync (const struct lfs_config *cfg);
+#ifndef STATIC
+#define STATIC  static
+#endif
+
+STATIC int ffs_pico_read (const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
+STATIC int ffs_pico_prog (const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size);
+STATIC int ffs_pico_erase (const struct lfs_config *cfg, lfs_block_t block);
+STATIC int ffs_pico_sync (const struct lfs_config *cfg);
 
 int ffs_pico_createcfg (struct lfs_config *cfg, int offset, int size)
     {
@@ -38,12 +42,7 @@ int ffs_pico_createcfg (struct lfs_config *cfg, int offset, int size)
 	return 0;
     }
 
-int ffs_pico_destroy (const struct lfs_config *cfg)
-    {
-	return 0;
-    }
-
-int ffs_pico_read (const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size)
+STATIC int ffs_pico_read (const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size)
     {
     uint8_t *ffs_mem  = (uint8_t *) cfg->context;
 
@@ -58,7 +57,7 @@ int ffs_pico_read (const struct lfs_config *cfg, lfs_block_t block, lfs_off_t of
 	return 0;
     }
 
-int ffs_pico_prog (const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size)
+STATIC int ffs_pico_prog (const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size)
     {
     uint8_t *ffs_mem  = (uint8_t *) cfg->context;
 
@@ -82,7 +81,7 @@ int ffs_pico_prog (const struct lfs_config *cfg, lfs_block_t block, lfs_off_t of
 	return 0;
     }
 
-int ffs_pico_erase (const struct lfs_config *cfg, lfs_block_t block)
+STATIC int ffs_pico_erase (const struct lfs_config *cfg, lfs_block_t block)
     {
     uint8_t *ffs_mem  = (uint8_t *) cfg->context;
 
@@ -103,7 +102,7 @@ int ffs_pico_erase (const struct lfs_config *cfg, lfs_block_t block)
 	return 0;
     }
 
-int ffs_pico_sync (const struct lfs_config *cfg)
+STATIC int ffs_pico_sync (const struct lfs_config *cfg)
     {
 	// sync does nothing because we aren't backed by anything real
 	return 0;
