@@ -5,6 +5,6 @@
 
 #include <pfs.h>
 
-const struct pfs_device *pfs_dev_tty_fetch ();
+struct pfs_device *pfs_dev_tty_fetch ();
 
 #endif

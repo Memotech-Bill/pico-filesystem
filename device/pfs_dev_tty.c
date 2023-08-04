@@ -6,6 +6,7 @@
 #include <sys/errno.h>
 #include <pico/stdio.h>
 #include <pfs_private.h>
+#include <../device/pfs_dev_tty.h>
 
 #ifndef STATIC
 #define STATIC  static
@@ -16,7 +17,7 @@ STATIC int tty_read (struct pfs_file *fd, char *buffer, int length);
 STATIC int tty_write (struct pfs_file *fd, char *buffer, int length);
 STATIC int tty_isatty (struct pfs_file *fd);
 
-STATIC const struct pfs_device s_tty =
+STATIC struct pfs_device s_tty =
     {
     tty_open
     };
@@ -73,7 +74,7 @@ STATIC int tty_isatty (struct pfs_file *fd)
     return 1;
     }
 
-const struct pfs_device *pfs_dev_tty_fetch (void)
+struct pfs_device *pfs_dev_tty_fetch (void)
     {
     return &s_tty;
     }

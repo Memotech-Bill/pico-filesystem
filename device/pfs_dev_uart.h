@@ -6,6 +6,6 @@
 #include <pfs.h>
 #include <sconfig.h>
 
-const struct pfs_device *pfs_dev_uart_create (int uid, SERIAL_CONFIG *sc);
+struct pfs_device *pfs_dev_uart_create (int uid, SERIAL_CONFIG *sc);
 
 #endif

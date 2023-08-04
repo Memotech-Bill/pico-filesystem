@@ -7,7 +7,7 @@ if (NOT TARGET pico_filesystem)
   target_sources(pico_filesystem INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/pfs_base.c
     ${CMAKE_CURRENT_LIST_DIR}/pname.c
-    ${CMAKE_CURRENT_LIST_DIR}/pfs_dev_tty.c
+    ${CMAKE_CURRENT_LIST_DIR}/../device/pfs_dev_tty.c
     )
 
   target_link_libraries(pico_filesystem INTERFACE

@@ -13,7 +13,7 @@
 #include <pfs_private.h>
 #include <dirent.h>
 #include <pname.h>
-#include <pfs_dev_tty.h>
+#include <../device/pfs_dev_tty.h>
 
 #undef errno
 extern int errno;

@@ -95,20 +95,20 @@ FAT filesystems stored on an SD card. The code is structured as:
            /--------------/     |     \----------------\
           /                     |                       \
 +------------------+   +-------------------+   +-------------------+
-| flash_filesystem |   | sdcard_filesystem |   | serial_filesystem |
+| flash_filesystem |   | sdcard_filesystem |   | device_filesystem |
 +------------------+   +-------------------+   +-------------------+
-         |                      |                        |
-    +----------+            +-------+                    |
-    | littlefs |            | FATFS |                    |
-    +----------+            +-------+                    |
-         |                      |                        |
-    +----------+           +---------+                   |
-    | ffs_pico |           | ff_disk |                   |
-    +----------+           +---------+                   |
-         |                      |                        |
-+-------------------+      +---------+            +------------+
-| Pico Flash Memory |      | SD Card |            | Pico UARTs |
-+-------------------+      +---------+            +------------+
+         |                      |                    /          \
+    +----------+            +-------+               /            \
+    | littlefs |            | FATFS |              /              \
+    +----------+            +-------+             /                \
+         |                      |                 |                |
+    +----------+           +---------+     +------------+   +-------------+
+    | ffs_pico |           | ff_disk |     | tty driver |   | uart driver |
+    +----------+           +---------+     +------------+   +-------------+
+         |                      |                 |                |
++-------------------+      +---------+     +------------+    +-----------+
+| Pico Flash Memory |      | SD Card |     | pico_stdio |    | pico uart |
++-------------------+      +---------+     +------------+    +-----------+
 ````
 
 ### pfs_filesystem
@@ -183,19 +183,37 @@ to the Pico, then specifying PICO_SD_DAT_PIN_COUNT will cause these
 pins to be pulled high. If these pins are not connected to the Pico
 then they must be wired to be pulled high.
 
-### serial_filesystem
+### device_filesystem
 
-This provides one or more device nodes for serial input / output.
-This code was developed for the
-[Pico version of BBC BASIC](https://github.com/Memotech-Bill/PicoBB)
-and is probably of less general interest.
+This provides support for loadable device drivers for input and
+output devices. Given suitable drivers this may include attached
+keyboards or displays, I2C devices or anything else that might
+provide or accept a character stream.
+
+See device/README.md for more details
+
+### tty driver
+
+This driver simply connects to the pico_stdio low level routines
+to provide input / output through USB, UART or SemiHosting.
+
+The first three file handles are by default connected to this
+driver so that `printf` etc. continues to work even though the
+original _hook functions_ in the Pico SDK have been overridden.
+
+### uart driver
+
+This driver provides direct access to either of the Pico UARTS.
 
 ## Application Programming Interface
 
 There is very little API to this software, just enough to configure
 and mount any file systems to use at the start of a program. After
 that, the routines are used via the standard C interface for file
-input / output and file and directory operations.
+input / output and file and directory operations. These routines
+are defined in the header file __pfs.h__.
+
+See test/pfs_test.c for a simple example of usage.
 
 ### int pfs_init (void)
 
@@ -214,9 +232,9 @@ of the NEWLIB _hook routines_ to be called.
 Initialises a __lfs_config__ structure which is then used to inform
 littlefs where and how to write to Pico flash memory.
 
-*   cfg = Pointer to the __lfs_config__ structure to initialise.
-*   offset = Starting address in flash memory to store the file data.
-*   size = Size (in bytes) of the data storage area.
+*   __cfg__ = Pointer to the __lfs_config__ structure to initialise.
+*   __offset__ = Starting address in flash memory to store the file data.
+*   __size__ = Size (in bytes) of the data storage area.
 
 Returns zero if successful, or -1 if the offset specified is not a
 multiple of the FLASH_PAGE_SIZE (from the board definition file).
@@ -226,7 +244,7 @@ multiple of the FLASH_PAGE_SIZE (from the board definition file).
 Creates a __pfs_pfs__ structure which defines a flash storage volume
 to mount.
 
-*   cfg = Pointer to the __lfs_config__ structure defining the flash
+*   __cfg__ = Pointer to the __lfs_config__ structure defining the flash
     storage space.
 
 The contents of the cfg structure are copied in to the volume definition,
@@ -241,18 +259,21 @@ to mount.
 The FATFS code maintains global state, so it is not currently
 possible to have multiple FAT volumes.
 
-### struct pfs_pfs *pfs_ser_create (void)
+### struct pfs_pfs *pfs_dev_fetch (void)
 
-Creates a __pfs_pfs__ structure which defines a device node volume
-for the serial ports.
+There is only ever one device filesystem. This routine gets
+the __pfs_pfs__ structure needed to mount the filesystem.
 
-### int pfs_mount (struct pfs_pfs *pfs, const char *psMount)
+The device_filesystem is initially empty until device drivers
+are attached to it.
+
+### int pfs_mount (struct pfs_pfs *pfs, const char *name)
 
 Mounts a volume and makes it available to the NEWLIB routines.
 
-*   pfs = Pointer to the volume definition from one of the above
+*   __pfs__ = Pointer to the volume definition from one of the above
     routines.
-*   psMount = Pointer to the name of the mount point.
+*   __name__ = Pointer to the name of the mount point.
 
 The mount point name will form the first part of the absolute
 path name of any file on the volume. For clarity, the name may
@@ -270,7 +291,28 @@ irrespecctive of whether there is a volume mounted as root.
 The routine returns zero on success, or a negative error
 code on failure.
 
+### int pfs_mknod (const char *name, int mode, const struct pfs_device *dev)
+
+Attaches a device driver to the device_filesystem.
+
+*   name = Name for the device
+*   mode = Mode for the device (currently ignored)
+*   dev = Pointer to a __pfs_device__ structure defining the
+    device
+
+The device name may end with a star (*), in which case it
+matches any name with the same beginning, and the entire
+name is passed to the driver, which may use the string to
+configure the device.
+
+See (device/README.md) for details of the device drivers.
+
 ## Error codes
+
+The following error codes are returned in the event of
+failure of __pfs_init__ or __pfs_mount__. Otherwise most
+routines return either -1 or a NULL pointer in the event
+of an error, and set the value of __errno__.
 
 *   0 - Success.
 *   -2 - No memory for file handles
@@ -309,7 +351,9 @@ implementing "Your File System", and using the three letters "yfs"
 to identify the code. Then in the source code ("pfs_yfs.c") there
 should be:
 
-1. Forward declarations of the functions you need to implement:
+1. Forward declarations of the functions you need to implement.
+   It may be possible to omit a few of these (isatty, ioctl, chmod)
+   as default behaviours are provided.
 
    ````
    struct pfs_file *yfs_open (struct pfs_pfs *pfs, const char *fn, int oflag);
@@ -319,6 +363,7 @@ should be:
    long yfs_lseek (struct pfs_file *pfs_fd, long pos, int whence);
    int yfs_fstat (struct pfs_file *pfs_fd, struct stat *buf);
    int yfs_isatty (struct pfs_file *fd);
+   int yfs_ioctl (struct pfs_file *fd, unsigned long request, void *argp);
    int yfs_stat (struct pfs_pfs *pfs, const char *name, struct stat *buf);
    int yfs_rename (struct pfs_pfs *pfs, const char *old, const char *new);
    int yfs_delete (struct pfs_pfs *pfs, const char *name);
@@ -331,7 +376,9 @@ should be:
     
    ````
 
-2. Static constant structures providing vectors into your routines
+2. Static constant structures providing vectors into your routines. If a
+   routine is not implemented, include a NULL pointer in the place of
+   that routine.
 
    ````
    static const struct pfs_v_pfs yfs_v_pfs =
@@ -353,6 +400,7 @@ should be:
        yfs_write,
        yfs_lseek,
        yfs_fstat,
+       yfs_ioctl,
        };
     
    static const struct pfs_v_dir yfs_v_dir =
@@ -403,7 +451,7 @@ should be:
 4. Your implementation of the functions listed in (1). Points to note:
 
     * All input filenames are given as full paths (excluding the mount point name)
-    * In the event of an error `pfs_err()` should be called with the appropriate
+    * In the event of an error `pfs_error ()` should be called with the appropriate
       error code from <sys/errno.h>, and return either NULL or -1 according to
       the return type of the function.
     * On success `yfs_open(...)` should allocate a `struct yfs_file` on the heap,
@@ -415,6 +463,8 @@ should be:
     * `yfs_close(...)` and `yfs_closedir(...)` should NOT free the memory associated
       with the pointers they are given. That is done within the PFS `_close(...)`
       and `_closedir(...)` routines.
+    * Support for ioctl has been added, to potentially provide control of the behaviour
+      of devices (e.g. baud rate), but presently no ioctl functions have been implemented.
 
 5. A routine to allocate and populate an instance of `struct yfs_pfs`.
    This routine may take whatever parameters are necessary

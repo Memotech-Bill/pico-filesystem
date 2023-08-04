@@ -2,9 +2,10 @@ set(PROJECT pfs_test)
 
 set(HAVE_LFS         1)
 set(HAVE_FAT         1)
-Set(HAVE_DEV         1)
-Set(ROOT_OFFSET      0x00070000)
-Set(ROOT_SIZE        65536)
+set(HAVE_DEV         1)
+set(HAVE_GIO         1)
+set(ROOT_OFFSET      0x00070000)
+set(ROOT_SIZE        65536)
 if(NOT DEFINED SD_CLK_PIN)
   set(PICO_SD_CLK_PIN  5)
   set(PICO_SD_CMD_PIN  18)
@@ -26,12 +27,13 @@ pico_enable_stdio_usb(${PROJECT} 1)
 pico_enable_stdio_uart(${PROJECT} 0)
 # pico_set_binary_type(${PROJECT} no_flash)
 
-# target_compile_options(${PROJECT} PUBLIC -DSTRUCT)
+target_compile_options(${PROJECT} PUBLIC -DSTATIC=)
 
 target_compile_options(${PROJECT} PRIVATE
     -DHAVE_LFS=${HAVE_LFS}
     -DHAVE_FAT=${HAVE_FAT}
     -DHAVE_DEV=${HAVE_DEV}
+    -DHAVE_GIO=${HAVE_GIO}
     -DROOT_OFFSET=${ROOT_OFFSET}
     -DROOT_SIZE=${ROOT_SIZE}
     -DPICO_SD_CLK_PIN=${PICO_SD_CLK_PIN}

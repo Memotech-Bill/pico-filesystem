@@ -13,6 +13,12 @@
 #if HAVE_DEV
 #include <pfs_dev_tty.h>
 #include <pfs_dev_uart.h>
+#if HAVE_GIO
+#include <pico/stdio.h>
+#include <pfs_dev_gdd.h>
+#include <pfs_dev_gio.h>
+struct pfs_device *gio_dev;
+#endif
 #endif
 
 #define BI_PFS_TAG              BINARY_INFO_MAKE_TAG('P', 'F')
@@ -77,6 +83,36 @@ void InitXip(void)
 
 #endif
 
+void sc_cfg (int uid, SERIAL_CONFIG *psc)
+    {
+    psc->baud = 115200;
+    psc->parity = UART_PARITY_NONE;
+    psc->data = 8;
+    psc->stop = 1;
+    if ( uid == PICO_DEFAULT_UART )
+        {
+        psc->tx = PICO_DEFAULT_UART_TX_PIN;
+        psc->rx = PICO_DEFAULT_UART_RX_PIN;
+        }
+    else if ( uid == 0 )
+        {
+        psc->tx = 0;
+        psc->rx = 1;
+        }
+    else
+        {
+        psc->tx = 4;
+        psc->rx = 5;
+        }
+    psc->cts = -1;
+    psc->rts = -1;
+    }
+
+void echo_char (char ch)
+    {
+    printf ("%c", ch);
+    }
+
 int main (void)
     {
     gpio_init(PICO_DEFAULT_LED_PIN);
@@ -117,35 +153,25 @@ int main (void)
 #endif
 #if HAVE_DEV
         pfs = pfs_dev_fetch ();
-        const struct pfs_device *dev = pfs_dev_tty_fetch ();
+        struct pfs_device *dev = pfs_dev_tty_fetch ();
         pfs_mknod ("tty0", 0, dev);
-        SERIAL_CONFIG sc =
-            {
-            .baud = 115200,
-            .parity = UART_PARITY_NONE,
-            .data = 8,
-            .stop = 1,
-#if PICO_DEFAULT_UART == 0
-            .tx = PICO_DEFAULT_UART_TX_PIN,
-            .rx = PICO_DEFAULT_UART_RX_PIN,
-#else
-            .tx = 0,
-            .rx = 1,
-#endif
-            .cts = -1,
-            .rts = -1
-            };
+
+        SERIAL_CONFIG sc;
+        sc_cfg (0, &sc);
         dev = pfs_dev_uart_create (0, &sc);
         if ( dev != NULL ) pfs_mknod ("uart0", 0, dev);
-#if PICO_DEFAULT_UART == 1
-        sc.tx = PICO_DEFAULT_UART_TX_PIN;
-        sc.rx = PICO_DEFAULT_UART_RX_PIN;
-#else
-        sc.tx = 4;
-        sc.rx = 5;
-#endif
+
+        sc_cfg (1, &sc);
         dev = pfs_dev_uart_create (1, &sc);
         if ( dev != NULL ) pfs_mknod ("uart1", 0, dev);
+
+#if HAVE_GIO
+        dev = pfs_dev_gdd_create (echo_char);
+        if ( dev != NULL ) pfs_mknod ("output", 0, dev);
+
+        gio_dev = pfs_dev_gio_create (echo_char, 64, GIO_M_CR | GIO_M_TLF);
+        if ( gio_dev != NULL ) pfs_mknod ("inout", 0, gio_dev);
+#endif
         pfs_mount(pfs, "/dev");
 #endif
         }
@@ -205,6 +231,31 @@ int main (void)
         printf ("Received reply: %s\n", reply);
         fclose (fp);
         }
+#if HAVE_GIO
+    printf ("Testing /dev/output\n");
+        {
+        FILE *fp = fopen ("/dev/output", "w");
+        fprintf (fp, "This string was written to /dev/output\n");
+        fclose (fp);
+        }
+    printf ("Testing /dev/inout\n");
+        {
+        FILE *fp = fopen ("/dev/inout", "w+");
+        fprintf (fp, "This string was written to /dev/inout\n");
+        printf ("Loading a string to read\n");
+        const char *psMsg = "A string loaded into /dev/inout\r";
+        while (*psMsg != '\0')
+            {
+            pfs_dev_gio_input (gio_dev, *psMsg);
+            ++psMsg;
+            }
+        char reply[512];
+        memset (reply, 0, sizeof (reply));
+        fgets (reply, sizeof (reply), fp);
+        printf ("Read from /dev/inout: %s\n", reply);
+        fclose (fp);
+        }
+#endif    
 #endif
     // ----------------------------------------------------------------------
     printf("Finished\n");

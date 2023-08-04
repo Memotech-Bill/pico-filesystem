@@ -12,8 +12,6 @@
 #include <sconfig.h>
 #include <pfs_private.h>
 
-#include <stdio.h>
-
 #ifndef STATIC
 #define STATIC  static
 #endif
