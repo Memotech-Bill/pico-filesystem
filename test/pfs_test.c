@@ -169,7 +169,7 @@ int main (void)
         dev = pfs_dev_gdd_create (echo_char);
         if ( dev != NULL ) pfs_mknod ("output", 0, dev);
 
-        gio_dev = pfs_dev_gio_create (echo_char, 64, GIO_M_CR | GIO_M_TLF);
+        gio_dev = pfs_dev_gio_create (echo_char, 64, IOC_MD_CR | IOC_MD_TLF);
         if ( gio_dev != NULL ) pfs_mknod ("inout", 0, gio_dev);
 #endif
         pfs_mount(pfs, "/dev");

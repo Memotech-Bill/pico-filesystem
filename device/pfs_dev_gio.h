@@ -5,14 +5,15 @@
 #ifndef PFS_DEV_GIO_H
 #define PFS_DEV_GIO_H
 
-// Modes specifying when a read request will return
-#define GIO_M_FULL      0x00000             // Only return when the buffer is full
-#define GIO_M_NBLOCK    0x10000             // Never block waiting for input
-#define GIO_M_ANY       0x20000             // Return as soon as at least one character input
-#define GIO_M_CHR       0x40000             // Return when specified character received
-#define GIO_M_CR        (GIO_M_CHR | '\r')  // Return when Carrage Return character received
-#define GIO_M_LF        (GIO_M_CHR | '\n')  // Return when Line Feed character received
-#define GIO_M_TLF       0x80000             // Replace terminating character by Line Feed
+#include <pfs.h>
+#include <ioctl.h>
+
+// For backwards compatibility
+#define GIO_M_MODE      IOC_RQ_MODE
+#define GIO_M_PURGE     IOC_RQ_PURGE
+#define GIO_M_COUNT     IOC_RQ_COUNT
+#define GIO_M_TOUT      IOC_RQ_TOUT
+#define GIO_M_SCFG      IOC_RQ_SCFG
 
 #ifndef GIO_OUTPUT_H
 #define GIO_OUTPUT_H

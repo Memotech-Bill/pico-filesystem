@@ -88,14 +88,14 @@ struct pfs_device *pfs_dev_gio_create (GIO_OUTPUT_RTN output, int ndata, int mod
   they are read. This must be a power of 2.
 
 * __mode__ = Value which determines when a read from the device will return:
-  +
-  + __GIO_M_FULL__      - Only return when the buffer is full
-  + __GIO_M_NBLOCK__    - Never block waiting for input
-  + __GIO_M_ANY__       - Return as soon as at least one character input
-  + __GIO_M_CHR__       - Return when specified character received
-  + __GIO_M_CR__        - Return when Carrage Return character received
-  + __GIO_M_LF__        - Return when Line Feed character received
-  + __GIO_M_TLF__       - Replace terminating character by Line Feed
+  + __IOC_MD_FULL__     - Only return when the buffer is full
+  + __IOC_MD_NBLOCK__   - Never block waiting for input
+  + __IOC_MD_ANY__      - Return as soon as at least one character input
+  + __IOC_MD_CHR__      - Return when specified character received
+  + __IOC_MD_CR__       - Return when Carrage Return character received
+  + __IOC_MD_LF__       - Return when Line Feed character received
+  + __IOC_MD_TLF__      - Replace terminating character by Line Feed
+  + __IOC_MD_ECHO__     - Echo input characters to output
 
 As for the output only driver, a single routine which receives single characters
 has to be supplied for outout using this device driver.
@@ -139,3 +139,52 @@ struct pfs_device *pfs_dev_uart_create (int uid, SERIAL_CONFIG *sc);
   + sc.rts - GPIO number for RTS, or -1 for no RTS pin
 
 In CMake specify the __pfs_dev_uart__ link library for this device driver.
+
+## IO Controls
+
+Calls to IOCTL are uset to adjust the operation of an input / output
+device.
+
+It should be noted that these IOCTLs are specific to PFS and have
+no resemblance to Linux or Windows IOCTLs.
+
+## ioctl (dev, IOC_RQ_MODE, int *mode)
+
+Sets when a device read will return:
+
+*  __IOC_MD_FULL__     - Only return when the buffer is full
+*  __IOC_MD_NBLOCK__   - Never block waiting for input
+*  __IOC_MD_ANY__      - Return as soon as at least one character input
+*  __IOC_MD_CHR__      - Return when specified character received
+*  __IOC_MD_CR__       - Return when Carrage Return character received
+*  __IOC_MD_LF__       - Return when Line Feed character received
+*  __IOC_MD_TLF__      - Replace terminating character by Line Feed
+*  __IOC_MD_ECHO__     - Echo input characters to output
+
+Applies to the Generic Input / Output driver and the UART driver.
+
+## ioctl (dev, IOC_RQ_PURGE, NULL)
+
+Purges all characters from the receive buffer
+
+Applies to the Generic Input / Output driver and the UART driver.
+
+## ioctl (dev, IOC_RQ_COUNT, int *count)
+
+Gets the count of the number of characters in the receive buffer.
+
+Applies to the Generic Input / Output driver and the UART driver.
+
+## ioctl (dev, IOC_RQ_TOUT, int *tout)
+
+Sets the read timeout in microseconds. A value of zero means
+wait forever. To have zero timeout, set the mode __IOC_MD_NBLOCK__.
+
+Applies to the Generic Input / Output driver and the UART driver.
+
+## ioctl (dev, IOC_RQ_SCFG, SERIAL_CONFIG *sc)
+
+Updates the baud rate (if non-zero), parity, number of data bits
+and number of stop bits of a UART.
+
+Applies to the UART driver only.
