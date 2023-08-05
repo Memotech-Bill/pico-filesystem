@@ -26,7 +26,7 @@ struct pfs_dev_gio
     unsigned int        tout;
     int                 ndata;
     int                 rptr;
-    int                 wptr;
+    volatile int        wptr;
     char                data[];
     };
 
@@ -44,12 +44,14 @@ STATIC const struct pfs_v_file gio_v_file =
 int pfs_dev_gio_input (struct pfs_device *dev, char ch)
     {
     struct pfs_dev_gio *gio = (struct pfs_dev_gio *) dev;
+    int wptr = gio->wptr;
     int wend = ( gio->rptr - 1 ) & ( gio->ndata - 1 );
-    if ( gio->wptr == wend ) return -1;
+    if ( wptr == wend ) return -1;
     if (( gio->mode & IOC_MD_ECHO ) && ( gio->output != NULL )) gio->output (ch);
-    gio->data[gio->wptr] = ch;
-    gio->wptr = (++gio->wptr) & ( gio->ndata - 1 );
-    if ( gio->wptr == wend ) return 1;
+    gio->data[wptr] = ch;
+    wptr = (++wptr) & ( gio->ndata - 1 );
+    gio->wptr = wptr;
+    if ( wptr == wend ) return 1;
     return 0;
     }
 
