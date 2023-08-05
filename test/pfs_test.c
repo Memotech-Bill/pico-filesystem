@@ -234,20 +234,6 @@ int main (void)
         char reply[512];
         fgets (reply, sizeof (reply), fp);
         printf ("Received reply: %s\n", reply);
-        // int nch = read (fd, reply, sizeof (reply));
-        // if ( nch > 0 )
-        //     {
-        //     reply[nch] = '\0';
-        //     printf ("Received reply: %s\n", reply);
-        //     }
-        // else if ( nch == 0 )
-        //     {
-        //     printf ("Timeout waiting for reply\n");
-        //     }
-        // else
-        //     {
-        //     printf ("Error %d reading reply\n", errno);
-        //     }
         fclose (fp);
         }
 #if HAVE_GIO
