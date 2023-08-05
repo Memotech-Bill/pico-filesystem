@@ -70,7 +70,7 @@ STATIC int gio_read (struct pfs_file *fd, char *buffer, int length)
         while ( gio->rptr == gio->wptr )
             {
             if ( time_reached (tend) ) break;
-            __wfi ();
+            // __wfi ();
             }
         if ( gio->rptr == gio->wptr ) break;
         *bptr = gio->data[gio->rptr];

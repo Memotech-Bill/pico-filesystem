@@ -19,6 +19,7 @@
 STATIC struct pfs_file *uart_open (const struct pfs_device *dev, const char *name, int oflags);
 STATIC int uart_read (struct pfs_file *fd, char *buffer, int length);
 STATIC int uart_write (struct pfs_file *fd, char *buffer, int length);
+STATIC int uart_ioctl (struct pfs_file *fd, unsigned long request, void *argp);
 
 #define NDATA   512     // Length of serial receive buffer (must be a power of 2)
 
@@ -42,7 +43,7 @@ STATIC const struct pfs_v_file uart_v_file =
     NULL,           // lseek
     NULL,           // fstat
     NULL,           // isatty
-    NULL,           // ioctl
+    uart_ioctl      // ioctl
     };
 
 STATIC void uart_input (struct pfs_dev_uart *pud)
@@ -91,7 +92,7 @@ STATIC int uart_read (struct pfs_file *fd, char *buffer, int length)
         while ( pud->rptr == pud->wptr )
             {
             if ( time_reached (tend) ) break;
-            __wfi ();
+            // __wfi ();
             uart_input (pud);
             }
         if ( pud->rptr == pud->wptr ) break;

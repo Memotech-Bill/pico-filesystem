@@ -22,4 +22,6 @@
 #define IOC_MD_TLF       0x80000                // Replace terminating character by Line Feed
 #define IOC_MD_ECHO     0x100000                // Echo the input characters to the output
 
+int ioctl (int fd, long request, void *argp);
+
 #endif

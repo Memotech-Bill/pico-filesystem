@@ -145,10 +145,25 @@ In CMake specify the __pfs_dev_uart__ link library for this device driver.
 Calls to IOCTL are uset to adjust the operation of an input / output
 device.
 
+````
+int ioctl (int fd, long request, void *argp);
+````
+
+The routine returns zero on success, or -1 and sets errno on
+failure.
+
+As per Posix standard, the first parameter is a file handle, not
+a `FILE *` pointer, use the following routine to obtain the file
+handle:
+
+````
+int fileno (FILE *fp);
+````
+
 It should be noted that these IOCTLs are specific to PFS and have
 no resemblance to Linux or Windows IOCTLs.
 
-## ioctl (dev, IOC_RQ_MODE, int *mode)
+## ioctl (int fd, long IOC_RQ_MODE, int *mode)
 
 Sets when a device read will return:
 
@@ -163,26 +178,26 @@ Sets when a device read will return:
 
 Applies to the Generic Input / Output driver and the UART driver.
 
-## ioctl (dev, IOC_RQ_PURGE, NULL)
+## ioctl (int fd, long IOC_RQ_PURGE, NULL)
 
 Purges all characters from the receive buffer
 
 Applies to the Generic Input / Output driver and the UART driver.
 
-## ioctl (dev, IOC_RQ_COUNT, int *count)
+## ioctl (int fd, long IOC_RQ_COUNT, int *count)
 
 Gets the count of the number of characters in the receive buffer.
 
 Applies to the Generic Input / Output driver and the UART driver.
 
-## ioctl (dev, IOC_RQ_TOUT, int *tout)
+## ioctl (int fd, long IOC_RQ_TOUT, int *tout)
 
 Sets the read timeout in microseconds. A value of zero means
 wait forever. To have zero timeout, set the mode __IOC_MD_NBLOCK__.
 
 Applies to the Generic Input / Output driver and the UART driver.
 
-## ioctl (dev, IOC_RQ_SCFG, SERIAL_CONFIG *sc)
+## ioctl (int fd, long IOC_RQ_SCFG, SERIAL_CONFIG *sc)
 
 Updates the baud rate (if non-zero), parity, number of data bits
 and number of stop bits of a UART.
