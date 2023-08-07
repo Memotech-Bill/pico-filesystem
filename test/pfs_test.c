@@ -6,8 +6,9 @@
 #include <errno.h>
 #include <dirent.h>
 #include <pfs.h>
-#include "pico/stdlib.h"
-#include "pico/binary_info.h"
+#include <pico/stdlib.h>
+#include <pico/stdio.h>
+#include <pico/binary_info.h>
 
 #if HAVE_LFS
 #include <ffs_pico.h>
@@ -16,7 +17,6 @@
 #include <pfs_dev_tty.h>
 #include <pfs_dev_uart.h>
 #if HAVE_GIO
-#include <pico/stdio.h>
 #include <pfs_dev_gdd.h>
 #include <pfs_dev_gio.h>
 struct pfs_device *gio_dev;

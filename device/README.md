@@ -140,6 +140,148 @@ struct pfs_device *pfs_dev_uart_create (int uid, SERIAL_CONFIG *sc);
 
 In CMake specify the __pfs_dev_uart__ link library for this device driver.
 
+### USB Keyboard Driver
+
+This uses the Pico in USB host mode, abd returns characters typed
+on a USB keyboard attached to the USB port. 5V must be applied to
+VSYS to power both the Pico and the Keyboard.
+
+Typical initialisation is:
+
+````
+#include <pfs_dev_kbd.h>
+#include <pfs_dev_keymap_uk.h>
+
+    dev = pfs_dev_kbd_fetch (&pfs_dev_keymap_uk);
+    pfs_mknod ("kbd", 0, dev);
+
+````
+
+See test/kbd_test.c for a complete example.
+
+The keyboard may be used in one of two different modes:
+
+* ASCII mode. Provides the ASCII code for each key typed. This
+  produces no input for keys which don't have an ASCII code,
+  such as the cursor keys (although you can define custom
+  codes for these keys).
+
+* Scan mode. Provides keyboard scan codes for each key press and
+  key release event.
+
+See below for more details. The initial mode is determined by
+the parameter to `pfs_dev_kbd_fetch`. If a __keymap__ is
+supplied (as shown) then the keyboard works in ASCII mode.
+If the parameter is NULL, then the keyboard works in Scan Mode.
+
+An IOCTL may be used to switch between modes once the keyboard
+file is open.
+
+Characters written to the keyboard device will update the keyboard
+LEDs:
+
+* Bit 0 controls the Num Lock LED
+* Bit 1 controls the Caps Lock LED
+* Bit 2 controls the Scroll Lock LED
+
+To use this driver use the following CMake link libraries:
+
+* pfs_dev_kbd
+* pfs_dev_keymap_uk
+
+#### ASCII Mode
+
+The translation of key presses to ASCII is defined by a lookup
+table with format given in __pfs_dev_keymap.h__:
+
+````
+typedef struct
+    {
+    int     nkey;
+    struct
+        {
+        char    lower;
+        char    upper;
+        } key[];
+    } PFS_DEV_KEYMAP;
+````
+
+A mapping for UK keyboards is given in __pfs_dev_keymap_uk.c__,
+the start of which is:
+
+````
+const PFS_DEV_KEYMAP pfs_dev_keymap_uk =
+    {
+    0x68,                   // Number of key mappings
+        {
+        { 0x00, 0x00 },     // 0x00 - No key pressed
+        { 0x00, 0x00 },     // 0x01 - Keyboard Error Roll Over - used for all slots if too many keys are pressed ("Phantom key")
+        { 0x00, 0x00 },     // 0x02 - Keyboard POST Fail
+        { 0x00, 0x00 },     // 0x03 - Keyboard Error Undefined
+        { 'a', 'A' },       // 0x04 - Keyboard a and A
+        { 'b', 'B' },       // 0x05 - Keyboard b and B
+        { 'c', 'C' },       // 0x06 - Keyboard c and C
+        { 'd', 'D' },       // 0x07 - Keyboard d and D
+        { 'e', 'E' },       // 0x08 - Keyboard e and E
+````
+
+The value of __nkey__ gives the highest scan code for which an
+ASCII translation is defined. Any value up to 255 may be used
+providing the following table has the corresponding number of
+entries.
+
+This is then followed by an ASCII code for each key without
+(lower) or with (upper) the shift key. A value of zero indicates
+no ASCII code for that key, so a press of that key will produce
+no output.
+
+By default many of the non-printing keys are defined as zero,
+so produce no output. If the preprocessor variable
+__EXTEND_ASCII__ is set to a non-zero value, then these keys
+are given values with bit 7 set.
+
+The Caps Lock, Scroll Lock and Num Lock keys will toggle the
+state of the corresponding keyboard LEDs.
+
+If the Caps Lock LED is lit, then lower case letters will be
+converted to upper case.
+
+If a Control key is pressed, then the 3 msb of the ASCII code
+will be cleared. <Ctrl+@> will produce an ASCII code of zero.
+It is not possibe to define a key that will produce an ASCII
+without the Control key pressed.
+
+#### Scan Mode
+
+See pico-sdk/lib/tinyusb/src/class/hid/hid.h for a list of key scan
+codes. In scan mode, the events are encoded in such a way that all
+the more common keys are given as a single byte, with the remainder
+as two bytes.
+
+* keys with scan codes up to 0x57 are sent as the scan code, with
+  bit 7 clear for key press events and bit 7 set for key release
+  events.
+
+* The modifier keys are sent as:
+  + 0x58 - Left control key
+  + 0x59 - Left shift key
+  + 0x5A - Left ALT key
+  + 0x5B - Left Window key
+  + 0x5C - Right control key
+  + 0x5D - Right shift key
+  + 0x5E - Right ALT key
+  + 0x5F - Right Window key
+  Bit 7 clear for key press events and bit 7 set for key release
+  events.
+
+* The remaining keys (mainly keypad and special keys) are sent
+  as two bytes:
+  + First 0x70 plus the 4 msb of the key scan code.
+  + Then 0x60 plus the 4 lsb of the key scan code.
+  So Keypad 5 (scan code 0x5D) is sent as 0x75, 0x6D.
+  Bit 7 of both bytes is clear for key press events and set on
+  both bytes for release events.
+
 ## IO Controls
 
 Calls to IOCTL are uset to adjust the operation of an input / output
@@ -203,3 +345,9 @@ Updates the baud rate (if non-zero), parity, number of data bits
 and number of stop bits of a UART.
 
 Applies to the UART driver only.
+
+## ioctl (int fd, long IOC_RQ_KEYMAP, PFS_DEV_KEYMAP *keymap)
+
+Sets the ASCII key map to use. If NULL then selects Scan Mode.
+
+Only applies to the USB keyboard driver.

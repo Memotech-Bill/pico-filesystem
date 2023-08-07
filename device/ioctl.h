@@ -11,6 +11,7 @@
 #define IOC_RQ_COUNT    3                       // Get count of characters in receive buffer
 #define IOC_RQ_TOUT     4                       // Set timeout in microseconds
 #define IOC_RQ_SCFG     5                       // Set serial configuration
+#define IOC_RQ_KEYMAP   6                       // Set keyboard mapping
 
 // Modes specifying when a read request will return
 #define IOC_MD_FULL      0x00000                // Only return when the buffer is full
