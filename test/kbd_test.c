@@ -31,7 +31,7 @@ int main (void)
     // ----------------------------------------------------------------------
     
     printf("Starting\n");
-    printf("Initialising file sytsem\n");
+    printf("Initialising file system\n");
     struct pfs_pfs *pfs = pfs_dev_fetch ();
         
     struct pfs_device *dev = pfs_dev_tty_fetch ();

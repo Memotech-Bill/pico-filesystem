@@ -135,7 +135,7 @@ int main (void)
     InitXip();
 #endif
     // ----------------------------------------------------------------------
-    printf("Initialising file sytsem\n");
+    printf("Initialising file system\n");
         {
         struct pfs_pfs *pfs;
 #if HAVE_LFS
