@@ -9,6 +9,10 @@ struct pfs_pfs;
 struct lfs_config;
 struct pfs_device;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Initialises the pico filesystem. In particular configures stdin,
 // stdout and stderr.
 
@@ -91,5 +95,9 @@ struct pfs_pfs *pfs_dev_fetch (void);
 // name is passed to the driver, which may use the string to
 // configure the device.
 int pfs_mknod (const char *name, int mode, const struct pfs_device *dev);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
