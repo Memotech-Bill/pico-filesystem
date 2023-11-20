@@ -2,6 +2,7 @@
 // Thanks to hippy for the original version: https://forums.raspberrypi.com/viewtopic.php?t=353918&start=25#p2124208
 
 #include <stdio.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
 #include <dirent.h>
@@ -199,6 +200,12 @@ int main (void)
         fclose(fp);
         }
     // ----------------------------------------------------------------------
+    printf("Creating subdirectory\n");
+        {
+        int ierr = mkdir ("/subdir", 0);
+        printf ("  mkdir (\"/subdir\") = %d\n", ierr);
+        }
+    // ----------------------------------------------------------------------
     printf("Reading directory\n");
         {
         DIR * dp = opendir("/");
@@ -207,6 +214,27 @@ int main (void)
             printf("  %s\n", ep->d_name);
             }
         closedir(dp);
+        }
+    // ----------------------------------------------------------------------
+    printf("Changing directory\n");
+        {
+        char dir[20];
+        int ierr = chdir ("/subdir");
+        printf ("  chdir (\"/subdir\") = %d\n", ierr);
+        printf ("  getwd () = %s\n", getcwd (dir, sizeof (dir)));
+        ierr = chdir ("/baddir");
+        printf ("  chdir (\"/baddir\") = %d\n", ierr);
+        printf ("  getwd () = %s\n", getcwd (dir, sizeof (dir)));
+        ierr = rmdir ("/subdir");
+        printf ("  rmdir (\"/subdir\") = %d\n", ierr);
+        if ( ierr != 0 )
+            {
+            ierr = chdir ("/");
+            printf ("  chdir (\"/\") = %d\n", ierr);
+            printf ("  getwd () = %s\n", getcwd (dir, sizeof (dir)));
+            ierr = rmdir ("/subdir");
+            printf ("  rmdir (\"/subdir\") = %d\n", ierr);
+            }
         }
     // ----------------------------------------------------------------------
 #if HAVE_DEV

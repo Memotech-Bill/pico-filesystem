@@ -40,7 +40,7 @@ static char rootdir = '/';
 int pfs_error (int ierr)
     {
     errno = ierr;
-    return ( ierr < 0 ) ? -1 : 0;
+    return ( ierr != 0 ) ? -1 : 0;
     }
 
 int pfs_init (void)
@@ -370,11 +370,21 @@ int chdir (const char *path)
     {
     int ierr = pfs_init ();
     if ( ierr != 0 ) return ierr;
+    const char *olddir = cwd;
     const char *pn = pname_append (cwd, path);
     if ( pn == NULL ) return -1;
-    free ((void *)cwd);
-    cwd = pn;
-    return 0;
+    struct stat sbuf;
+    ierr = stat (pn, &sbuf);
+    if ( ierr == 0 )
+        {
+        free ((void *)cwd);
+        cwd = pn;
+        }
+    else
+        {
+        free ((void *)pn);
+        }
+    return ierr;
     }
 
 int mkdir (const char *name, mode_t mode)
@@ -396,6 +406,11 @@ int rmdir (const char *name)
     const char *rname;
     struct pfs_mount *m = reference (&name, &rname);
     if ( m == NULL ) return -1;
+    if ( strcmp (name, cwd) == 0 )
+        {
+        free ((void *)name);
+        return pfs_error (EBUSY);
+        }
     ierr = ( m->pfs->entry->rmdir != NULL ) ? m->pfs->entry->rmdir (m->pfs, rname) : pfs_error (EPERM);
     free ((void *)name);
     return ierr;
