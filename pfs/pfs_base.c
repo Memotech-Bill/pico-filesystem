@@ -375,6 +375,7 @@ int chdir (const char *path)
     if ( pn == NULL ) return -1;
     struct stat sbuf;
     ierr = stat (pn, &sbuf);
+    if (( ierr == 0 ) && ( (sbuf.st_mode & S_IFDIR) == 0 )) ierr = ENOTDIR;
     if ( ierr == 0 )
         {
         free ((void *)cwd);

@@ -85,6 +85,13 @@ STATIC int dev_stat (struct pfs_pfs *pfs, const char *name, struct stat *buf)
     {
     struct dev_pfs *dfs = (struct dev_pfs *) pfs;
     if ( name[0] == '/' ) ++name;
+    if ( name[0] == '\0' )
+        {
+        memset (buf, 0, sizeof (struct stat));
+        buf->st_nlink = 1;
+        buf->st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+        return 0;
+        }
     for (const struct dev_device *ddv = dfs->devs; ddv != NULL; ddv = ddv->next )
         {
         if (( strncmp (name, ddv->name, ddv->nlen) == 0 )
