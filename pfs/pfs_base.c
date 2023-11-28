@@ -203,7 +203,7 @@ int _open (const char *fn, int oflag, ...)
             }
         }
     int nh = 2 * num_handle;
-    struct pfs_file ** fi2 = (struct pfs_file **) realloc (files, nh * sizeof (pfs_file *));
+    struct pfs_file ** fi2 = (struct pfs_file **) realloc (files, nh * sizeof (struct pfs_file *));
     if ( fi2 == NULL )
         {
         if ( f->entry->close != NULL ) f->entry->close (f);
