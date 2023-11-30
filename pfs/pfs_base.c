@@ -35,7 +35,7 @@ static struct pfs_mount *mounts = NULL;
 static struct pfs_file ** files = NULL;
 static int num_handle = 0;
 static const char *cwd = NULL;
-static char rootdir = '/';
+static char *rootdir = "/";
 
 int pfs_error (int ierr)
     {
@@ -166,7 +166,7 @@ static struct pfs_mount *reference (const char **pn, const char **pr)
             {
             if ( (*pn)[m->nlen] == '\0' )
                 {
-                *pr = &rootdir;
+                *pr = rootdir;
                 return m;
                 }
             if ( (*pn)[m->nlen] == '/' )
