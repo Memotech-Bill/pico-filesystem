@@ -4,6 +4,7 @@ set(NO_FLASH         0)
 set(HAVE_LFS         1)
 set(HAVE_FAT         1)
 set(HAVE_DEV         1)
+set(HAVE_UART        1)
 set(HAVE_GIO         1)
 set(ROOT_OFFSET      0x00070000)
 set(ROOT_SIZE        65536)
@@ -32,6 +33,7 @@ target_compile_options(pfs_test PRIVATE
     -DHAVE_LFS=${HAVE_LFS}
     -DHAVE_FAT=${HAVE_FAT}
     -DHAVE_DEV=${HAVE_DEV}
+    -DHAVE_UART=${HAVE_UART}
     -DHAVE_GIO=${HAVE_GIO}
     -DROOT_OFFSET=${ROOT_OFFSET}
     -DROOT_SIZE=${ROOT_SIZE}

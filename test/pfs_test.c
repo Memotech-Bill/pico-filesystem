@@ -16,7 +16,9 @@
 #endif
 #if HAVE_DEV
 #include <pfs_dev_tty.h>
+#if HAVE_UART
 #include <pfs_dev_uart.h>
+#endif
 #if HAVE_GIO
 #include <pfs_dev_gdd.h>
 #include <pfs_dev_gio.h>
@@ -86,6 +88,7 @@ void InitXip(void)
 
 #endif
 
+#if HAVE_UART
 void sc_cfg (int uid, SERIAL_CONFIG *psc)
     {
     psc->baud = 115200;
@@ -110,6 +113,7 @@ void sc_cfg (int uid, SERIAL_CONFIG *psc)
     psc->cts = -1;
     psc->rts = -1;
     }
+#endif
 
 void echo_char (char ch)
     {
@@ -159,6 +163,7 @@ int main (void)
         struct pfs_device *dev = pfs_dev_tty_fetch ();
         pfs_mknod ("tty0", 0, dev);
 
+#if HAVE_UART
         SERIAL_CONFIG sc;
         sc_cfg (0, &sc);
         dev = pfs_dev_uart_create (0, &sc);
@@ -167,6 +172,7 @@ int main (void)
         sc_cfg (1, &sc);
         dev = pfs_dev_uart_create (1, &sc);
         if ( dev != NULL ) pfs_mknod ("uart1", 0, dev);
+#endif
 
 #if HAVE_GIO
         dev = pfs_dev_gdd_create (echo_char);
@@ -248,6 +254,7 @@ int main (void)
         closedir(dp);
         }
     // ----------------------------------------------------------------------
+#if HAVE_UART
     printf("Testing UART\n");
         {
 #if PICO_DEFAULT_UART == 0
@@ -264,6 +271,7 @@ int main (void)
         printf ("Received reply: %s\n", reply);
         fclose (fp);
         }
+#endif
 #if HAVE_GIO
     printf ("Testing /dev/output\n");
         {
