@@ -173,10 +173,10 @@ STATIC long fat_lseek (struct pfs_file *pfs_fd, long pos, int whence)
     struct fat_file *fd = (struct fat_file *) pfs_fd;
     switch (whence)
         {
-        case SEEK_CUR: whence += f_tell (&fd->fil); break;
-        case SEEK_END: whence += f_size (&fd->fil); break;
+        case SEEK_CUR: pos += f_tell (&fd->fil); break;
+        case SEEK_END: pos += f_size (&fd->fil); break;
         }
-    FRESULT r = f_lseek (&fd->fil, whence);
+    FRESULT r = f_lseek (&fd->fil, pos);
     return ( r == FR_OK ) ? f_tell (&fd->fil) : fat_error (r);
     }
 
