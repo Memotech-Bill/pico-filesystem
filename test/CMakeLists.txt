@@ -43,7 +43,11 @@ target_compile_options(pfs_test PRIVATE
     -DPICO_SD_DAT3_PIN=${PICO_SD_DAT3_PIN}
 )
 target_link_options(pfs_test PRIVATE -g)
-target_link_libraries(pfs_test pico_stdlib pico_binary_info)
+target_link_libraries(pfs_test
+    pico_stdlib
+    pico_binary_info
+    pico_status_led
+    )
 
 pico_add_extra_outputs(pfs_test)
 pico_enable_stdio_usb(pfs_test 1)
@@ -72,11 +76,12 @@ target_compile_options(kbd_test PRIVATE -O1 -g)
 target_compile_options(kbd_test PUBLIC -DSTATIC=)
 target_link_options(kbd_test PRIVATE -g)
 target_link_libraries(kbd_test
-  pico_stdlib
-  pico_binary_info
-  pfs_dev_kbd
-  pfs_dev_keymap_uk
-  )
+    pico_stdlib
+    pico_binary_info
+    pico_status_led
+    pfs_dev_kbd
+    pfs_dev_keymap_uk
+    )
 
 pico_add_extra_outputs(kbd_test)
 pico_enable_stdio_usb(kbd_test 0)

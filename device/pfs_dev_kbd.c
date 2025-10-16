@@ -6,7 +6,6 @@
 #include <pico/stdlib.h>
 #include <bsp/board.h>
 #include <tusb.h>
-#include <class/hid/hid.h>
 #include <stdio.h>
 #include <pfs_private.h>
 #include <pfs_dev_gio.h>
@@ -19,12 +18,20 @@
 #define KBD_VERSION     3
 #elif (TUSB_VERSION_MINOR == 14) | (TUSB_VERSION_MINOR == 15)
 #define KBD_VERSION     4
+#elif (TUSB_VERSION_MINOR == 17) || (TUSB_VERSION_MINOR == 18)
+#define KBD_VERSION     5
 #endif  // TUSB_VERSION_MINOR
 #endif  // TUSB_VERSION_MAJOR
 #endif  // KBD_VERSION
 #ifndef KBD_VERSION
 #error Unknown USB Version for keyboard
 #endif  // KBD_VERSION
+
+#if KBD_VERSION == 5
+#include "class/hid/hid_host.h"
+#else
+#include "class/hid/hid.h"
+#endif
 
 #ifndef STATIC
 #define STATIC  static
@@ -37,6 +44,8 @@ STATIC PFS_DEV_KEYMAP *keymap = NULL;
 STATIC struct pfs_file *(*kbd_gio_open) (const struct pfs_device *dev, const char *name, int oflags) = NULL;
 STATIC int (*kbd_gio_ioctl) (struct pfs_file *fd, unsigned long request, void *argp) = NULL;
 STATIC struct pfs_v_file kbd_entry;
+STATIC uint8_t kbd_addr;
+STATIC uint8_t kbd_inst;
 
 #ifndef USE_ASYNC_CONTEXT
 #define USE_ASYNC_CONTEXT   1
@@ -55,11 +64,10 @@ STATIC async_at_time_worker_t                   asyw = { .do_work = kbd_work };
 
 STATIC void set_leds (char leds)
     {
+    led_flags = leds;
+#if KBD_VERSION == 3
     uint8_t const addr = 1;
-    led_flags = (uint8_t) leds;
-#if DEBUG > 0
-    printf ("set_leds (%02X)\n", leds);
-#endif
+
     static tusb_control_request_t ledreq = {
         .bmRequestType_bit.recipient = TUSB_REQ_RCPT_INTERFACE,
         .bmRequestType_bit.type = TUSB_REQ_TYPE_CLASS,
@@ -69,17 +77,30 @@ STATIC void set_leds (char leds)
         .wIndex = 0,    // Interface number
         .wLength = sizeof (led_flags)
         };
-
-#if KBD_VERSION == 3
+    
     bool bRes = tuh_control_xfer (addr, &ledreq, &led_flags, NULL);
 #elif KBD_VERSION == 4
-    tuh_xfer_t ledxfer = {
+    uint8_t const addr = 1;
+
+    static tusb_control_request_t ledreq = {
+        .bmRequestType_bit.recipient = TUSB_REQ_RCPT_INTERFACE,
+        .bmRequestType_bit.type = TUSB_REQ_TYPE_CLASS,
+        .bmRequestType_bit.direction = TUSB_DIR_OUT,
+        .bRequest = HID_REQ_CONTROL_SET_REPORT,
+        .wValue = HID_REPORT_TYPE_OUTPUT << 8,
+        .wIndex = 0,    // Interface number
+        .wLength = sizeof (led_flags)
+        };
+    
+    static tuh_xfer_t ledxfer = {
         .daddr = addr,
         .setup = &ledreq,
         .buffer = &led_flags,
         .complete_cb = NULL
         };
     bool bRes = tuh_control_xfer (&ledxfer);
+#elif KBD_VERSION == 5
+    tuh_hid_set_report(kbd_addr, kbd_inst, 0, HID_REPORT_TYPE_OUTPUT, &led_flags, sizeof(led_flags));
 #endif
     }
 
@@ -228,7 +249,7 @@ STATIC inline void process_kbd_report(hid_keyboard_report_t const *p_new_report)
     prev_report = *p_new_report;
     }
 
-#if (KBD_VERSION == 3) || (KBD_VERSION == 4)
+#if (KBD_VERSION >= 3) || (KBD_VERSION <= 5)
 
 //--------------------------------------------------------------------+
 // TinyUSB Callbacks
@@ -257,6 +278,15 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     const char* protocol_str[] = { "None", "Keyboard", "Mouse" };
     printf("HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]);
 #endif
+
+    if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD )
+        {
+        kbd_addr = dev_addr;
+        kbd_inst = instance;
+#if DEBUG > 0
+        printf ("Keyboard mounted: dev_addr = %d\n", dev_addr);
+#endif
+        }
 
     // By default host stack will use activate boot protocol on supported interface.
     // Therefore for this simple example, we only need to parse generic report descriptor

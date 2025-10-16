@@ -10,6 +10,7 @@
 #include <pico/stdlib.h>
 #include <pico/stdio.h>
 #include <pico/binary_info.h>
+#include <pico/status_led.h>
 
 #if HAVE_LFS
 #include <ffs_pico.h>
@@ -122,17 +123,16 @@ void echo_char (char ch)
 
 int main (void)
     {
-    gpio_init(PICO_DEFAULT_LED_PIN);
-    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+    status_led_init();
     stdio_init_all();
-    int iLed = 0;
+    bool bLed = false;
     while (!stdio_usb_connected())
         {
-        iLed = 1 - iLed;
-	    gpio_put(PICO_DEFAULT_LED_PIN, iLed);
+        bLed = ! bLed;
+        status_led_set_state(bLed);
         sleep_ms(500);
         }
-    gpio_put(PICO_DEFAULT_LED_PIN, 0);
+    status_led_set_state(false);
     printf("Starting\n");
     // ----------------------------------------------------------------------
 #if PICO_NO_FLASH

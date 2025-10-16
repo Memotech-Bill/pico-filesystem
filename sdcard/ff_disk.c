@@ -5,7 +5,7 @@
 #include <pico.h>
 #include <pico/stdlib.h>
 #include <pico/types.h>
-#include <hardware/rtc.h>
+#include <pico/aon_timer.h>
 #include <../fatfs/ff.h>
 #include <../fatfs/diskio.h>
 
@@ -329,25 +329,25 @@ DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff)
 
 DWORD get_fattime (void)
     {
-    if ( rtc_running () )
+    if ( aon_timer_is_running () )
         {
-        datetime_t  dt;
-        rtc_get_datetime (&dt);
-        if (( dt.year >= 2000 ) && ( dt.year <= 2100 )
-            && ( dt.month >= 1 ) && ( dt.month <= 12 )
-            && ( dt.day >= 1 ) && ( dt.day <= 31 )
-            && ( dt.hour >= 0 ) && ( dt.hour <= 23 )
-            && ( dt.min >= 0 ) && ( dt.min <= 59 )
-            && ( dt.sec >= 0 ) && ( dt.sec <= 59 ))
+        struct tm tm;
+        aon_timer_get_time_calendar (&tm);
+        if (( tm.tm_year >= 100 ) && ( tm.tm_year <= 200 )
+            && ( tm.tm_mon >= 1 ) && ( tm.tm_mon <= 12 )
+            && ( tm.tm_mday >= 1 ) && ( tm.tm_mday <= 31 )
+            && ( tm.tm_hour >= 0 ) && ( tm.tm_hour <= 23 )
+            && ( tm.tm_min >= 0 ) && ( tm.tm_min <= 59 )
+            && ( tm.tm_sec >= 0 ) && ( tm.tm_sec <= 59 ))
             {
             // Done this way to avoid an obscure compiler error
             DWORD   tim;
-            tim = ((DWORD) dt.year) << 25;
-            tim |= ((DWORD) dt.month) << 21;
-            tim |= ((DWORD) dt.day) << 16;
-            tim |= ((DWORD) dt.hour) << 11;
-            tim |= ((DWORD) dt.min) << 5;
-            tim |= ((DWORD) dt.sec) >> 1;
+            tim = ((DWORD) tm.tm_year) << 25;
+            tim |= ((DWORD) tm.tm_mon) << 21;
+            tim |= ((DWORD) tm.tm_mday) << 16;
+            tim |= ((DWORD) tm.tm_hour) << 11;
+            tim |= ((DWORD) tm.tm_min) << 5;
+            tim |= ((DWORD) tm.tm_sec) >> 1;
             return tim;
             }
         }

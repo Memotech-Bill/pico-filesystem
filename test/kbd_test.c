@@ -8,6 +8,7 @@
 #include <ioctl.h>
 #include <pico/stdlib.h>
 #include <pico/stdio.h>
+#include <pico/status_led.h>
 #include <pfs.h>
 #include <pfs_dev_tty.h>
 #include <pfs_dev_kbd.h>
@@ -15,18 +16,18 @@
 
 int main (void)
     {
-    gpio_init(PICO_DEFAULT_LED_PIN);
-    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+    status_led_init();
     stdio_init_all();
-    int iLed = 0;
+    bool bLed = false;
     while (true)
         {
-        iLed = 1 - iLed;
-	    gpio_put(PICO_DEFAULT_LED_PIN, iLed);
+        bLed = ! bLed;
+        status_led_set_state(bLed);
         printf (".");
         if ( getchar_timeout_us (500000) == 0x0D ) break;
         }
-    gpio_put(PICO_DEFAULT_LED_PIN, 0);
+    status_led_set_state(false);
+    printf("Starting\n");
 
     // ----------------------------------------------------------------------
     
