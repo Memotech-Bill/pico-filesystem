@@ -231,7 +231,33 @@ int main (void)
         ierr = chdir ("/baddir");
         printf ("  chdir (\"/baddir\") = %d\n", ierr);
         printf ("  getwd () = %s\n", getcwd (dir, sizeof (dir)));
-        ierr = rmdir ("/subdir");
+        }
+    // ----------------------------------------------------------------------
+    printf("Writing File\n");
+        {
+        FILE * fp = fopen("pfs2.txt", "w");
+        fprintf(fp, "This was written by Memotech Bill's 'pico-filesystem'\n");
+#if PICO_NO_FLASH
+        fprintf(fp, "Running in RAM\n");
+#endif
+        fprintf(fp, "Built on %s %s\n", __DATE__, __TIME__);
+        fclose(fp);
+        }
+    // ----------------------------------------------------------------------
+    printf("Reading directory\n");
+        {
+        DIR * dp = opendir(".");
+        struct dirent *ep;
+        while ((ep = readdir(dp)) != NULL) {
+            printf("  %s    Type = %d\n", ep->d_name, ep->d_type);
+            }
+        closedir(dp);
+        }
+    // ----------------------------------------------------------------------
+    printf("Removing directory\n");
+        {
+        char dir[20];
+        int ierr = rmdir ("/subdir");
         printf ("  rmdir (\"/subdir\") = %d\n", ierr);
         if ( ierr != 0 )
             {
@@ -240,6 +266,13 @@ int main (void)
             printf ("  getwd () = %s\n", getcwd (dir, sizeof (dir)));
             ierr = rmdir ("/subdir");
             printf ("  rmdir (\"/subdir\") = %d\n", ierr);
+            if ( ierr != 0 )
+                {
+                ierr = unlink ("/subdir/pfs2.txt");
+                printf ("  unlink (\"/subdir/pfs2.txt\") = %d\n", ierr);
+                ierr = rmdir ("/subdir");
+                printf ("  rmdir (\"/subdir\") = %d\n", ierr);
+                }
             }
         }
     // ----------------------------------------------------------------------
