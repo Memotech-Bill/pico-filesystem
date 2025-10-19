@@ -442,8 +442,9 @@ void *opendir (const char *name)
             if ( d != NULL )
                 {
                 d->entry = NULL;
-                d->flags = PFS_DF_DOT | PFS_DF_DEV | PFS_DF_ROOT;
                 d->m = mounts;
+                d->flags = PFS_DF_DOT | PFS_DF_ROOT;
+                if ((mounts != NULL) && (mounts->nlen > 0)) d->flags |= PFS_DF_DEV;
                 }
             }
         }
@@ -455,8 +456,9 @@ void *opendir (const char *name)
             d->flags = PFS_DF_DOT | PFS_DF_FS;
             if ( strcmp (name, "/") == 0 )
                 {
-                d->flags |= PFS_DF_DEV | PFS_DF_ROOT;
                 d->m = mounts;
+                d->flags |= PFS_DF_ROOT;
+                if ((mounts != NULL) && (mounts->nlen > 0)) d->flags |= PFS_DF_DEV;
                 }
             else
                 {
