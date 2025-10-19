@@ -217,7 +217,7 @@ int main (void)
         DIR * dp = opendir("/");
         struct dirent *ep;
         while ((ep = readdir(dp)) != NULL) {
-            printf("  %s\n", ep->d_name);
+            printf("  %s    Type = %d\n", ep->d_name, ep->d_type);
             }
         closedir(dp);
         }
@@ -249,7 +249,7 @@ int main (void)
         DIR * dp = opendir("/dev");
         struct dirent *ep;
         while ((ep = readdir(dp)) != NULL) {
-            printf("  %s\n", ep->d_name);
+            printf("  %s    Type = %d\n", ep->d_name, ep->d_type);
             }
         closedir(dp);
         }

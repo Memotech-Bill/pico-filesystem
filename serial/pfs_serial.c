@@ -284,6 +284,7 @@ struct dirent *ser_readdir (void *dirp)
     struct ser_dir *dd = (struct ser_dir *) dirp;
     if ( dd->did >= didCount ) return NULL;
     strncpy (dd->de.d_name, psDevName[dd->did], NAME_MAX);
+    dd->de.d_type = DT_CHR;
     ++dd->did;
     return &dd->de;
     }

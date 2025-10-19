@@ -258,6 +258,7 @@ STATIC struct dirent *fat_readdir (void *dirp)
         }
     if ( info.fname[0] == '\0' ) return NULL;
     strncpy (dd->de.d_name, info.fname, NAME_MAX);
+    dd->de.d_type = (info.fattrib == AM_DIR) ? DT_REG : DT_DIR;
     return &dd->de;
     }
 

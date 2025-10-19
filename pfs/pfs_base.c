@@ -488,18 +488,21 @@ struct dirent *readdir (void *dirp)
     if ( d->flags & PFS_DF_DOT )
         {
         strcpy (d->de.d_name, ".");
+        d->de.d_type = DT_DIR;
         d->flags &= ~ PFS_DF_DOT;
         return &d->de;
         }
     if ( d->flags & PFS_DF_DDOT )
         {
         strcpy (d->de.d_name, "..");
+        d->de.d_type = DT_DIR;
         d->flags &= ~ PFS_DF_DDOT;
         return &d->de;
         }
     if ( d->flags & PFS_DF_DEV )
         {
         strcpy (d->de.d_name, &d->m->name[1]);
+        d->de.d_type = DT_DIR;
         while (true)
             {
             d->m = d->m->next;

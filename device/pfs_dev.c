@@ -127,6 +127,7 @@ STATIC struct dirent *dev_readdir (void *dirp)
     struct dev_dir *dd = (struct dev_dir *) dirp;
     if ( dd->ddv == NULL ) return NULL;
     strncpy (dd->de.d_name, dd->ddv->name, NAME_MAX);
+    dd->de.d_type = DT_CHR;
     dd->ddv = dd->ddv->next;
     return &dd->de;
     }

@@ -229,6 +229,7 @@ STATIC struct dirent *ffs_readdir (void *dirp)
     if ( r < 0 ) pfs_error (r);
     if ( r <= 0 ) return NULL;
     strncpy (dd->de.d_name, info.name, NAME_MAX);
+    dd->de.d_type = (info.type == LFS_TYPE_REG) ? DT_REG : DT_DIR;
     return &dd->de;
     }
 
